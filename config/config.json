@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "albertson-vendor-warning-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/albertsonVendorWarning/AlbertsonVendorWarningWebPart.js",
+          "manifest": "./src/webparts/albertsonVendorWarning/AlbertsonVendorWarningWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "AlbertsonVendorWarningWebPartStrings": "lib/webparts/albertsonVendorWarning/loc/{locale}.js"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "41717b92-abdb-44a6-b92a-3c8a6ed70c9a",
+  "alias": "AlbertsonVendorWarningWebPart",
+  "componentType": "WebPart",
+  "version": "*",
+  "manifestVersion": 2,
+  "requiresCustomScript": false,
+  "preconfiguredEntries": [
+    {
+      "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+      "group": {
+        "default": "Other"
+      },
+      "title": {
+        "default": "AlbertsonVendorWarning"
+      },
+      "description": {
+        "default": "AlbertsonVendorWarning description"
+      },
+      "officeFabricIconFontName": "Page",
+      "properties": {
+        "description": "AlbertsonVendorWarning"
+      }
+    }
+  ]
+}

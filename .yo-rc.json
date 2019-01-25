@@ -2,7 +2,7 @@
   "@microsoft/generator-sharepoint": {
     "isCreatingSolution": true,
     "environment": "spo",
-    "version": "1.7.1",
+    "version": "1.5.1",
     "libraryName": "albertson-vendor-warning",
     "libraryId": "bf75f726-9f38-4f65-a467-374bf075af4b",
     "packageManager": "npm",

@@ -1,6 +1,9 @@
 @import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
 
 .albertsonVendorWarning {
+  display:flex;
+  flex-direction: column;
+  height:100vh;
   .container {
     max-width: 700px;
     margin: 0px auto;
@@ -9,9 +12,9 @@
 
   .row {
     @include ms-Grid-row;
-    @include ms-fontColor-white;
-    background-color: $ms-color-themeDark;
-    padding: 20px;
+    // @include ms-fontColor-white;
+    // background-color: $ms-color-themeDark;
+    // padding: 20px;
   }
 
   .column {
@@ -22,9 +25,145 @@
     @include ms-lgPush1;
   }
 
+  .fullWidth {
+    width: 100% !important;
+  }
+
+  .fullWidthDiv {
+    @include ms-Grid-col;
+    @include ms-sm12;
+    @include ms-md12;
+    @include ms-lg12;
+    }
+
+  .halfWidthDiv {
+  @include ms-Grid-col;
+  @include ms-sm12;
+  @include ms-md6;
+  @include ms-lg6;
+  }
+
+  .oneThirdWidthDiv {
+    @include ms-Grid-col;
+    @include ms-sm12;
+    @include ms-md3;
+    @include ms-lg3;
+    }
+
+    .oneFourthWidthDiv {
+      @include ms-Grid-col;
+      @include ms-sm12;
+      @include ms-md4;
+      @include ms-lg4;
+      }
+
+      .oneSixthWidthDiv {
+        @include ms-Grid-col;
+        @include ms-sm12;
+        @include ms-md2;
+        @include ms-lg2;
+        }
+
+    .twoThirdWidthDiv {
+      @include ms-Grid-col;
+      @include ms-sm12;
+      @include ms-md9;
+      @include ms-lg9;
+      }
+      .vendorWarningHeader {
+        min-height:44px;
+        background-color: $ms-color-white;
+        border-bottom-width: 1px;
+        border-bottom-style: solid;
+        border-bottom-color: $ms-color-themeTertiary;
+      }
+
+      .vendorWarningBody {
+        flex-grow:1;
+        overflow-y:auto;
+        overflow-x:hidden;
+      }
+
+      .vendorWarningFooter {
+        background-color: #03a1e3;
+      }
+    .reverseDirection {
+      flex-direction: row-reverse; 
+    }
+    .justifyContentBetween {
+      -ms-flex-pack: justify;
+      justify-content: space-between;
+  }
+  
+  .dFlex {
+      display: -ms-flexbox;
+      display: flex;
+  }
+
+  .dColumn {
+    flex-direction:column;
+  }
+
+  .paddingAround {
+padding:30px;
+border-width:1px;
+border-style: solid;
+  }
+
+  .footerPaddingAround {
+    padding:10px;
+  }
+
+  .bodyContentHolder {
+    padding:8px;
+    margin:0 auto;
+    width:100%;
+    box-sizing: border-box;
+  }
+
+  .bodyContentHolderPadding {
+    padding: 8px 16px;
+    display:flex;
+    flex-direction:column;
+    box-sizing:border-box;
+  }
+
+  .bodyContentHolderMaxWidth {
+    max-width:700px;
+  }
+
+  .logo {
+    padding-left:8px;
+    padding-top:11px;
+    box-sizing:border-box;
+  }
+
+  .actionItems {
+    padding-right:8px;
+    padding-top: 5px;
+  }
+
+  .spaceRight {
+margin-right:10px;
+  }
+
+  .flexGrowOne {
+    flex-grow: 1;
+  }
+
+
+
+  .spaceBottom {
+    margin-bottom:18px;
+      }
+
+
+
   .title {
-    @include ms-font-xl;
-    @include ms-fontColor-white;
+    padding-bottom:14px;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: $ms-color-themeTertiary;
   }
 
   .subTitle {
@@ -37,10 +176,23 @@
     @include ms-fontColor-white;
   }
 
+  .vendorButton {
+    display:inline-block;
+  }
+
+  .stepbuttonsRight {
+    display:flex;
+    flex-direction: row-reverse;
+  }
+
+  .minusMarginForFooterReset {
+    margin: 0px -8px -8px -8px;
+  }
+
   .button {
     // Our button
     text-decoration: none;
-    height: 32px;
+    height: 40px;
 
     // Primary Button
     min-width: 80px;
@@ -70,5 +222,23 @@
       vertical-align: top;
       display: inline-block;
     }
+  }
+}
+
+:global {
+  .fullwidthModal {height:100vh !important; width:100vw !important;}
+  .ms-modalExample-container{width:50vw;display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-flow:column nowrap;flex-flow:column nowrap;-webkit-box-align:stretch;-ms-flex-align:stretch;align-items:stretch}
+  .ms-modalExample-container .ms-modalExample-header{background:#0078d4;color:#fff;display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:28px;font-weight:100;font-weight:600;padding:0 28px;min-height:40px}
+  .ms-modalExample-container .ms-modalExample-body{-webkit-box-flex:4;-ms-flex:4 4 auto;flex:4 4 auto;padding:5px 28px;overflow-y:auto}
+  button[class*="vendorButton_"] i {
+    width:32px;
+    height:32px;
+    line-height: 32px;
+    font-size:32px;
+    }
+
+  button[class*="reverseDirection_"], button[class*="reverseDirection_"] i {
+    color:#fff !important;
+    font-weight:500 !important;
   }
 }

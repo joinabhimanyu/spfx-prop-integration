@@ -1,11 +1,13 @@
 
-
-export interface IVendorComplain {
-  key: number;
+export interface IUPC {
   upcpart1?: string;
   upcpart2?: string;
   upcpart3?: string;
   upcpart4?: string;
+}
+export interface IVendorComplain {
+  key: number;
+  upc?: IUPC;
   gtin?: string;
   corporateItemCode?: string;
   warningText?: string;
@@ -15,29 +17,34 @@ export interface IVendorComplain {
   foodInd?: string;
   effFromDate?: string;
   isEditable: boolean;
-  attachment?: IAttachment;
+  canBeEditable: boolean;
+  isCloned: boolean;
 }
 
 export interface INewItem {
-  upcpart1?: string;
-  upcpart2?: string;
-  upcpart3?: string;
-  upcpart4?: string;
+  upc?: IUPC;
   gtin?: string;
   corporateItemCode?: string;
 }
 
-export interface IAttachment {
+export interface IAttachmentProps {
+  userid?: string;
   name?: string;
-  data?: any;
-  typeOfDocument?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  vendNum?: string;
+  vendName?: string;
+  files?: IAttachment[];
+  setFiles: Function;
+  changeStep: Function;
 }
 
-export interface IAttachmentModalData {
+export interface IAttachment {
   key?: number;
   name?: string;
-  data?: any;
-  typeOfDocument?: string;
+  uploadTimeStamp?: string;
+  serverRelativeUrl?: string;
 }
 
 export interface IModalData {
@@ -65,8 +72,13 @@ export interface IVendorInfo {
 }
 
 export interface IValidationError {
-  validationMessege?: string;
-  hasError: boolean;
+  errors?: IValidationFields[];
+  hasError?: boolean;
+}
+
+export interface IValidationFields {
+  field?: string;
+  errorMessage?: string;
 }
 
 export interface IContactModalData {

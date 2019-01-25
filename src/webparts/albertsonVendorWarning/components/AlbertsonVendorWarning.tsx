@@ -1,17 +1,16 @@
 import * as React from 'react';
-import { Fragment } from 'react';
 import styles from './AlbertsonVendorWarning.module.scss';
-import { IVendorComplain, IModalData, Step, IValidationError, IAttachment, IAttachmentModalData, INewItem } from '../interfaces/AlbertsonDomainInterfaces';
+import { IVendorComplain, IModalData, Step, IValidationError, IValidationFields, INewItem } from '../interfaces/AlbertsonDomainInterfaces';
 import { TextField } from 'office-ui-fabric-react/lib/TextField';
-import { DetailsList, DetailsListLayoutMode, SelectionMode, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
+import { DetailsList, DetailsListLayoutMode, Selection, SelectionMode, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
 import { Modal } from 'office-ui-fabric-react/lib/Modal';
-import { DefaultButton, IconButton } from 'office-ui-fabric-react/lib/Button';
+import { DefaultButton, IconButton, ActionButton } from 'office-ui-fabric-react/lib/Button';
 import { Checkbox } from 'office-ui-fabric-react/lib/Checkbox';
 import { DatePicker, DayOfWeek, IDatePickerStrings } from 'office-ui-fabric-react/lib/DatePicker';
-import { Toggle } from 'office-ui-fabric-react/lib/Toggle';
 import { debounce } from '@microsoft/sp-lodash-subset';
 import { Dropdown } from 'office-ui-fabric-react/lib/Dropdown';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
+import { IUPC } from '../../../../lib/webparts/albertsonVendorWarning/interfaces/AlbertsonDomainInterfaces';
 
 export interface IVendorComplainExampleState {
   columns: IColumn[];
@@ -19,13 +18,12 @@ export interface IVendorComplainExampleState {
   isCompactMode: boolean;
   showModal: boolean;
   modalData: IModalData;
-  showAttachmentModal: boolean;
-  attachment: IAttachmentModalData;
   showNewItemModal: boolean;
   newItem: INewItem;
+  selectedItem?: IVendorComplain;
 }
 
-let _items: IVendorComplain[] = [];
+// let _items: IVendorComplain[] = [];
 
 const DayPickerStrings: IDatePickerStrings = {
   months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -44,10 +42,14 @@ const DayPickerStrings: IDatePickerStrings = {
 };
 
 export default class AlbertsonVendorWarning extends React.Component<any, IVendorComplainExampleState> {
+  private _selection: Selection;
   private _debounceModalChangeValue: any;
   private _debounceFilterChangeValue: any;
   constructor(props: any) {
     super(props);
+    this._selection = new Selection({
+      onSelectionChanged: () => this.setState({ selectedItem: this._getSelectionDetails() })
+    });
     const _columns: IColumn[] = [
       {
         key: 'isEditable',
@@ -57,16 +59,6 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         maxWidth: 10,
         isResizable: true,
         data: 'boolean',
-        isPadded: true
-      },
-      {
-        key: 'attachment',
-        name: '',
-        fieldName: '',
-        minWidth: 10,
-        maxWidth: 10,
-        isResizable: true,
-        data: 'any',
         isPadded: true
       },
       {
@@ -83,8 +75,8 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         key: 'upcpart1',
         name: '',
         fieldName: 'upcpart1',
-        minWidth: 10,
-        maxWidth: 10,
+        minWidth: 40,
+        maxWidth: 50,
         isResizable: true,
         isSorted: true,
         isSortedDescending: false,
@@ -96,8 +88,8 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         key: 'upcpart2',
         name: '',
         fieldName: 'upcpart2',
-        minWidth: 10,
-        maxWidth: 10,
+        minWidth: 40,
+        maxWidth: 50,
         isResizable: true,
         isSorted: true,
         isSortedDescending: false,
@@ -109,8 +101,8 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         key: 'upcpart3',
         name: 'UPC Name',
         fieldName: 'upcpart3',
-        minWidth: 50,
-        maxWidth: 50,
+        minWidth: 70,
+        maxWidth: 90,
         isResizable: true,
         isSorted: true,
         isSortedDescending: false,
@@ -122,8 +114,8 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         key: 'upcpart4',
         name: '',
         fieldName: 'upcpart4',
-        minWidth: 50,
-        maxWidth: 50,
+        minWidth: 70,
+        maxWidth: 90,
         isResizable: true,
         isSorted: true,
         isSortedDescending: false,
@@ -225,10 +217,9 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       modalData: {},
       isCompactMode: false,
       showModal: false,
-      showAttachmentModal: false,
-      attachment: {},
       showNewItemModal: false,
-      newItem: {}
+      newItem: { upc: {} },
+      selectedItem: this._getSelectionDetails()
     };
     this._debounceModalChangeValue = (text: string) => {
       const { modalData } = this.state;
@@ -240,7 +231,8 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       });
     };
     this._debounceFilterChangeValue = (text: string) => {
-      this.setState({ items: text ? _items.filter(i => `${i.upcpart1} ${i.upcpart2} ${i.upcpart3} ${i.upcpart4}`.toLowerCase().indexOf(text) > -1).slice() : _items.slice() });
+      const { items } = this.state;
+      this.setState({ items: text ? items.filter(i => `${i!.upc!.upcpart1} ${i!.upc!.upcpart2} ${i!.upc!.upcpart3} ${i!.upc!.upcpart4}`.toLowerCase().indexOf(text) > -1).slice() : items.slice() });
     };
     this._debounceModalChangeValue = debounce(this._debounceModalChangeValue, 500);
     this._debounceFilterChangeValue = debounce(this._debounceFilterChangeValue, 500);
@@ -265,27 +257,50 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
     const { items } = this.state;
     const filter = items.filter(x => x.key == key);
     if (filter && filter.length > 0) {
-      filter[0].isEditable = !filter[0].isEditable;
+      const { canBeEditable } = filter[0];
+      if (canBeEditable) {
+        filter[0].isEditable = !filter[0].isEditable;
+        this.setState({
+          items: items.slice()
+        });
+      }
+    }
+  }
+  public async componentDidMount() {
+    let { items } = this.props;
+    if (items && items.length > 0) {
+      items = items.slice();
+      items = this._sortItems(items, 'key');
+    } else {
+      items = await this.testSeedItems();
+      items = this._sortItems(items, 'key');
     }
     this.setState({
       items: items.slice()
     });
   }
-  public componentDidMount() {
-    const { items } = this.props;
-    if (items && items.length > 0) {
-      _items = items.slice();
-      _items = this._sortItems(_items, 'key');
-    } else {
-      _items = [
-        { key: 0, upcpart1: '0', upcpart2: '0', upcpart3: '44600', upcpart4: '32071', gtin: '12345678901234', corporateItemCode: '12345678', warningText: 'this product can get expired', itemDescription: 'demo desc', isProp65: 'Y', isOnLabel: 'Y', foodInd: 'N', effFromDate: new Date('12/20/2018').toLocaleDateString(), isEditable: false },
-        { key: 1, upcpart1: '0', upcpart2: '0', upcpart3: '44600', upcpart4: '38025', gtin: '12345678901289', corporateItemCode: '25689543', warningText: '', itemDescription: 'demo desc', isProp65: 'Y', isOnLabel: 'Y', foodInd: 'N', effFromDate: new Date('12/31/2018').toLocaleDateString(), isEditable: false },
+  private async testSeedItems(): Promise<IVendorComplain[]> {
+
+    return new Promise<IVendorComplain[]>((resolve, reject) => {
+      const items: IVendorComplain[] = [
+        {
+          key: 0, upc: { upcpart1: '0', upcpart2: '0', upcpart3: '44600', upcpart4: '32071' } as IUPC,
+          gtin: '12345678901234', corporateItemCode: '12345678', warningText: 'this product can get expired', itemDescription: 'demo desc', isProp65: 'Y', isOnLabel: 'Y', foodInd: 'N', effFromDate: new Date('12/20/2018').toLocaleDateString(), isEditable: false, canBeEditable: true, isCloned: false
+        },
+        {
+          key: 1, upc: { upcpart1: '0', upcpart2: '0', upcpart3: '44600', upcpart4: '38025' } as IUPC,
+          gtin: '12345678901289', corporateItemCode: '25689543', warningText: '', itemDescription: 'demo desc', isProp65: 'Y', isOnLabel: 'Y', foodInd: 'N', effFromDate: new Date('12/31/2018').toLocaleDateString(), isEditable: false, canBeEditable: true, isCloned: false
+        },
       ];
-      _items = this._sortItems(_items, 'key');
-    }
-    this.setState({
-      items: _items.slice()
+      setTimeout(() => {
+        resolve(items as IVendorComplain[]);
+      }, 10);
     });
+  }
+  private async seedItems(): Promise<IVendorComplain[]> {
+    const items: IVendorComplain[] = [];
+    // get previous entered items from sharepoint
+    return Promise.resolve(items);
   }
   private showModal = (fieldName: string, index: number) => (event: any) => {
     const data = this.state.items[index];
@@ -300,93 +315,6 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       });
     }
   }
-  private openAttachmentModal = (key: number) => (event: any) => {
-    const { items } = this.state;
-    let attachment: IAttachmentModalData = { key: key };
-    const item = items[key];
-    if (item && item.attachment) {
-      attachment = {
-        ...attachment,
-        ...item.attachment
-      };
-    }
-    this.setState({
-      showAttachmentModal: true,
-      attachment: attachment
-    });
-  }
-  private closeAttachmentModal = (): void => {
-    this.setState({
-      showAttachmentModal: false
-    });
-  }
-  private saveAttachmentModal = (): void => {
-    const { attachment, items } = this.state;
-    if (attachment && items) {
-      const selected = items[attachment.key];
-      if (selected) {
-        selected.attachment = {
-          name: attachment.name,
-          data: attachment.data,
-          typeOfDocument: attachment.typeOfDocument
-        };
-      }
-    }
-    this.setState({
-      showAttachmentModal: false,
-      items: items.slice()
-    });
-  }
-  private changeTypeOfDocument = (value: any) => {
-    const { attachment } = this.state;
-    attachment.typeOfDocument = value.key;
-    this.setState({
-      attachment: {
-        ...attachment
-      }
-    });
-  }
-  private getFileBuffer(file: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      let reader: any = new FileReader();
-      reader.onload = (e: any) => {
-        resolve(e.target.result);
-      };
-      reader.onerror = (e: any) => {
-        reject(e.target.error);
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  }
-  private _changeFileSelection = (e: any) => {
-    if (e.currentTarget && e.currentTarget.files && e.currentTarget.files.length > 0) {
-      const { attachment } = this.state;
-      const file = e.currentTarget.files[0];
-      if (file && file!.type == "application/pdf") {
-        this.getFileBuffer(file).then((buffer: any) => {
-          attachment.name = file.name;
-          attachment.data = buffer;
-          this.setState({
-            attachment: {
-              ...attachment
-            }
-          });
-        });
-      } else {
-        alert('Invalid file');
-      }
-    }
-  }
-  private clearAttachment = () => {
-    const { attachment } = this.state;
-    this.setState({
-      attachment: {
-        ...attachment,
-        name: '',
-        data: null
-      }
-    });
-  }
   private onDropdownChange = (fieldName: string, key: number) => (value: any) => {
     const { items } = this.state;
     if (fieldName) {
@@ -398,6 +326,28 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       }
     } else {
       alert('no item selected');
+    }
+  }
+  private upcChange = (fieldName: string, key: number) => (text: string) => {
+    if (fieldName) {
+      const { items } = this.state;
+      if (items[key]) {
+        items[key]!['upc']![fieldName] = text || '';
+        this.setState({
+          items: items.slice()
+        });
+      }
+    }
+  }
+  private valuesChanged = (fieldName: string, key: number) => (text: string) => {
+    if (fieldName) {
+      const { items } = this.state;
+      if (items[key]) {
+        items[key]![fieldName] = text || '';
+        this.setState({
+          items: items.slice()
+        });
+      }
     }
   }
   private onSelectDate = (index: number) => (date: Date | null | undefined) => {
@@ -438,7 +388,7 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
   private openNewItemModal = () => {
     this.setState({
       showNewItemModal: true,
-      newItem: {}
+      newItem: { upc: {} }
     });
   }
   private closeNewItemModal = () => {
@@ -446,11 +396,52 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       showNewItemModal: false
     });
   }
+  private validateUPC = (item: INewItem): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    !item!.upc!.upcpart1 || !item!.upc!.upcpart2 || !item!.upc!.upcpart3 || !item!.upc!.upcpart4 ? (function () {
+      result.fields.push({
+        field: 'UPC',
+        errorMessage: 'Invalid UPC'
+      });
+      result.valid = false;
+    }()) : (function () {
+    }());
+    return result;
+  }
+  private validateGTIN = (item: INewItem): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    !item.gtin ? (function () {
+      result.fields.push({
+        field: 'gtin',
+        errorMessage: 'GTIN cannot be blank'
+      }); result.valid = false;
+
+    }()) : (function () {
+    }());
+    return result;
+  }
+  private validateCorporateItemCode = (item: INewItem): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    !item.corporateItemCode ? (function () {
+      result.fields.push({
+        field: 'corporateItemCode',
+        errorMessage: 'Corporate Item Code cannot be blank'
+      }); result.valid = false;
+
+    }()) : (function () {
+    }());
+    return result;
+  }
   private validateNewItem = (): IValidationError => {
-    const result: IValidationError = { validationMessege: '', hasError: false };
+    const result: IValidationError = { errors: [], hasError: false };
     const { newItem } = this.state;
-    if (!newItem.upcpart1 || !newItem.upcpart2 || !newItem.upcpart3 || !newItem.upcpart4 || !newItem.gtin || !newItem.corporateItemCode) {
-      result.validationMessege = "Invalid item";
+    const vUPC = this.validateUPC({ ...newItem });
+    const vGTIN = this.validateGTIN({ ...newItem });
+    const vCIC = this.validateCorporateItemCode({ ...newItem });
+    if (vUPC.valid || vGTIN.valid || vCIC.valid) {
+      return result;
+    } else {
+      result.errors = [...vUPC.fields, ...vGTIN.fields, ...vCIC.fields];
       result.hasError = true;
     }
     return result;
@@ -458,33 +449,48 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
   private changeNewItemValue = (fieldName: string) => (text: string) => {
     if (fieldName) {
       const { newItem } = this.state;
-      this.setState({
-        newItem: {
-          ...newItem,
-          [fieldName]: text
-        }
-      });
+      if (fieldName.indexOf(".") == -1) {
+        this.setState({
+          newItem: {
+            ...newItem,
+            [fieldName]: text
+          }
+        });
+      } else {
+        const parts = fieldName.split(".");
+        this.setState({
+          newItem: {
+            ...newItem,
+            [parts[0] || '']: {
+              ...newItem[parts[0] || ''],
+              [parts[1] || '']: text
+            }
+          }
+        });
+      }
+
     }
   }
   private addItem = (): void => {
     const { items, newItem } = this.state;
     const result = this.validateNewItem();
     if (result.hasError) {
-      alert(result.validationMessege);
+      console.log(JSON.stringify(result.errors));
     } else {
       let maxKey = 0;
-      items.forEach((item) => {
-        if (item!.key > maxKey) {
-          maxKey = item.key;
-        }
-      });
-      maxKey += 1;
+      if (items.length > 0) {
+        items.forEach((item) => {
+          if (item!.key > maxKey) {
+            maxKey = item.key;
+          }
+        });
+        maxKey += 1;
+      }
       items.push({
         key: maxKey,
-        upcpart1: newItem.upcpart1,
-        upcpart2: newItem.upcpart2,
-        upcpart3: newItem.upcpart3,
-        upcpart4: newItem.upcpart4,
+        upc: {
+          ...newItem!.upc
+        },
         gtin: newItem.gtin,
         corporateItemCode: newItem.corporateItemCode,
         warningText: '',
@@ -494,7 +500,8 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         foodInd: 'N',
         effFromDate: new Date().toLocaleDateString(),
         isEditable: false,
-        attachment: null
+        canBeEditable: true,
+        isCloned: false
       });
       this.setState({
         items: items.slice(),
@@ -505,7 +512,7 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
   }
   private previousClick = () => {
     const { items } = this.state;
-    const vresult: IValidationError = this.validateOnNext();
+    const vresult = this.validateOnNext();
     if (vresult.hasError) {
       alert(vresult.validationMessege);
     } else {
@@ -519,7 +526,7 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
   }
   private nextClick = () => {
     const { items } = this.state;
-    const vresult: IValidationError = this.validateOnNext();
+    const vresult = this.validateOnNext();
     if (vresult.hasError) {
       alert(vresult.validationMessege);
     } else {
@@ -531,27 +538,81 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       }
     }
   }
-  private validateOnNext(): IValidationError {
+  private validateOnNext() {
     const result = { validationMessege: null, hasError: false };
-    const { items } = this.state;
+    let { items } = this.state;
+    items = items as IVendorComplain[];
     let filter = items.filter(x => x.isEditable);
     if (filter && filter.length > 0) {
       result.validationMessege = "Unsaved changes detected. Please save to proceed";
       result.hasError = true;
     } else {
-      filter = items.filter(x => !x.upcpart1 || !x.upcpart2 || !x.upcpart3 || !x.upcpart4 || !x.gtin);
-      if (filter && filter.length > 0) {
+      const invalidEntries = [];
+      for (let item of items) {
+        const arg: INewItem = {
+          upc: {
+            ...item.upc
+          },
+          gtin: item.gtin,
+          corporateItemCode: item.corporateItemCode
+        };
+        if (this.validateUPC({ ...arg }) || this.validateGTIN({ ...arg }) || this.validateCorporateItemCode({ ...arg })) {
+          continue;
+        } else {
+          invalidEntries.push(item);
+        }
+      }
+      if (invalidEntries.length > 0) {
         result.validationMessege = "Contains invalid entries";
         result.hasError = true;
       }
     }
     return result;
   }
+  private addUPCByCloningItem = (): void => {
+    let { items, selectedItem } = this.state;
+    items = items as IVendorComplain[];
+    selectedItem = selectedItem as IVendorComplain;
+    if (selectedItem) {
+      const arg: INewItem = {
+        upc: {
+          ...selectedItem.upc
+        },
+        gtin: selectedItem.gtin,
+        corporateItemCode: selectedItem.corporateItemCode
+      };
+      if (this.validateGTIN({ ...arg }) || this.validateCorporateItemCode({ ...arg })) {
+        let maxKey = 0;
+        if (items.length > 0) {
+          items.forEach((item) => {
+            if (item!.key > maxKey) {
+              maxKey = item.key;
+            }
+          });
+          maxKey += 1;
+        }
+        items.push({
+          ...selectedItem,
+          key: maxKey,
+          upc: {},
+          isEditable: false,
+          canBeEditable: true,
+          isCloned: true
+        });
+        this.setState({
+          items: items.slice()
+        });
+      } else {
+        alert('Invalid row to cloan. Please add either GTIN or Corporate Item Code');
+      }
+    }
+  }
   public render() {
-    const { columns, isCompactMode, items, modalData, showModal, showAttachmentModal, attachment, showNewItemModal, newItem } = this.state;
+    const { columns, isCompactMode, items, modalData, showModal, showNewItemModal, newItem, selectedItem } = this.state;
     let modalHeader = null;
     let label = null;
     let isEditable = false;
+    let isCloned = false;
     if (modalData && modalData.key) {
       switch (modalData.key) {
         case 'warningText':
@@ -565,169 +626,178 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       }
       const item = items[modalData.index];
       isEditable = item!.isEditable;
-    }
-    let icon = null;
-    if (attachment!.name && attachment!.data) {
-      icon = <Icon iconName="PDF" className="ms-IconExample" />;
+      isCloned = item!.isCloned;
     }
     let modalButtons = null;
-    if (isEditable) {
-      modalButtons = <Fragment>
-        <DefaultButton onClick={this.saveModal} text="Ok" />
-        <DefaultButton onClick={this.closeModal} text="Cancel" />
-      </Fragment>;
-    } else {
+    if (isCloned) {
       modalButtons = <DefaultButton onClick={this.closeModal} text="Close" />;
+    } else {
+      if (isEditable) {
+        modalButtons = <div>
+          <DefaultButton onClick={this.saveModal} text="Ok" />
+          <DefaultButton onClick={this.closeModal} text="Cancel" />
+        </div>;
+      } else {
+        modalButtons = <DefaultButton onClick={this.closeModal} text="Close" />;
+      }
+    }
+    let addUpcDisabled: boolean = false;
+    if (!selectedItem) {
+      addUpcDisabled = true;
+    } else {
+      const { gtin, corporateItemCode } = selectedItem as IVendorComplain;
+      if (!gtin && !corporateItemCode) {
+        addUpcDisabled = true;
+      }
     }
     return (
-      <div className={styles.albertsonVendorWarning}>
-        <Modal
-          titleAriaId="newItemModal"
-          subtitleAriaId="newItemModalSub"
-          isOpen={showNewItemModal}
-          onDismiss={this.closeNewItemModal}
-          isBlocking={false}
-          containerClassName="ms-modalExample-container"
-        >
-          <div className="ms-modalExample-header">
-            <span id="newItemModal">New Item</span>
-          </div>
-          <div id="newItemModalSub" className="ms-modalExample-body">
-            <form>
-              <TextField label="UPC Name" value={newItem.upcpart1} onChanged={this.changeNewItemValue('upcpart1')} />
-              <TextField value={newItem.upcpart2} onChanged={this.changeNewItemValue('upcpart2')} />
-              <TextField value={newItem.upcpart3} onChanged={this.changeNewItemValue('upcpart3')} />
-              <TextField value={newItem.upcpart4} onChanged={this.changeNewItemValue('upcpart4')} />
-              <TextField label="GTIN/Item Code" value={newItem.gtin} onChanged={this.changeNewItemValue('gtin')} />
-              <TextField label="Corporate Item Code" value={newItem.corporateItemCode} onChanged={this.changeNewItemValue('corporateItemCode')} />
+      <div>
+        <div className={styles.flexGrowOne}>
+          <Modal
+            titleAriaId="newItemModal"
+            subtitleAriaId="newItemModalSub"
+            isOpen={showNewItemModal}
+            onDismiss={this.closeNewItemModal}
+            isBlocking={false}
+            containerClassName="ms-modalExample-container"
+          >
+            <div className="ms-modalExample-header">
+              <span id="newItemModal">New Item</span>
+            </div>
+            <div id="newItemModalSub" className="ms-modalExample-body">
+              <form>
+                <TextField label="UPC Name" value={newItem!.upc!.upcpart1} onChanged={this.changeNewItemValue('upc.upcpart1')} />
+                <TextField value={newItem!.upc!.upcpart2} onChanged={this.changeNewItemValue('upc.upcpart2')} />
+                <TextField value={newItem!.upc!.upcpart3} onChanged={this.changeNewItemValue('upc.upcpart3')} />
+                <TextField value={newItem!.upc!.upcpart4} onChanged={this.changeNewItemValue('upc.upcpart4')} />
+                <TextField label="GTIN/Item Code" value={newItem.gtin} onChanged={this.changeNewItemValue('gtin')} />
+                <TextField label="Corporate Item Code" value={newItem.corporateItemCode} onChanged={this.changeNewItemValue('corporateItemCode')} />
 
-              <DefaultButton onClick={this.addItem} text="Ok" />
-              <DefaultButton onClick={this.closeNewItemModal} text="Cancel" />
+                <DefaultButton onClick={this.addItem} text="Ok" />
+                <DefaultButton onClick={this.closeNewItemModal} text="Cancel" />
 
-            </form>
-          </div>
-        </Modal>
-        <Modal
-          titleAriaId="itemModal"
-          subtitleAriaId="itemModalSub"
-          isOpen={showModal}
-          onDismiss={this.closeModal}
-          isBlocking={false}
-          containerClassName="ms-modalExample-container"
-        >
-          <div className="ms-modalExample-header">
-            <span id="itemModal">{modalHeader}</span>
-          </div>
-          <div id="itemModalSub" className="ms-modalExample-body">
-            <TextField label={label} readOnly={!isEditable} value={modalData.value} multiline={true} onChanged={this.changeModalValue} />
-            {modalButtons}
-          </div>
-        </Modal>
+              </form>
+            </div>
+          </Modal>
+          <Modal
+            titleAriaId="itemModal"
+            subtitleAriaId="itemModalSub"
+            isOpen={showModal}
+            onDismiss={this.closeModal}
+            isBlocking={false}
+            containerClassName="ms-modalExample-container"
+          >
+            <div className="ms-modalExample-header">
+              <span id="itemModal">{modalHeader}</span>
+            </div>
+            <div id="itemModalSub" className="ms-modalExample-body">
+              <TextField label={label} disabled={isCloned ? true : (!isEditable)} value={modalData.value} multiline={true} onChanged={this.changeModalValue} />
+              {modalButtons}
+            </div>
+          </Modal>
+          <TextField placeholder="Filter by name" onChanged={this.onFilterChange}></TextField>
+          <DetailsList
+            items={items}
+            columns={columns}
+            setKey="set"
+            layoutMode={DetailsListLayoutMode.justified}
+            selection={this._selection}
+            selectionPreservedOnEmptyClick={true}
+            selectionMode={SelectionMode.single}
+            compact={isCompactMode}
+            isHeaderVisible={true}
+            ariaLabelForSelectionColumn="Toggle selection"
+            ariaLabelForSelectAllCheckbox="Toggle selection for all items"
+            onItemInvoked={this._onItemInvoked}
+            onRenderItemColumn={this._onRenderColumn}
+          />
+        </div>
+        <div className={[styles.vendorWarningFooter, styles.minusMarginForFooterReset].join(' ')}>
 
-        <Modal
-          titleAriaId="attachmentModal"
-          subtitleAriaId="attachmentModalSub"
-          isOpen={showAttachmentModal}
-          onDismiss={this.closeAttachmentModal}
-          isBlocking={false}
-          containerClassName="ms-modalExample-container"
-        >
-          <div className="ms-modalExample-header">
-            <span id="attachmentModal">Attachment</span>
+          <div className={[styles.dFlex, styles.justifyContentBetween, styles.footerPaddingAround].join(' ')}>
+            <div>
+              <DefaultButton onClick={this.openNewItemModal} primary={true} text="Add Another Item" />
+              <DefaultButton disabled={addUpcDisabled} onClick={this.addUPCByCloningItem} primary={true} text="Add UPC" />
+            </div>
+            <div>
+              <ActionButton
+                data-automation-id="back"
+                iconProps={{ iconName: 'ChromeBack' }}
+                onClick={this.previousClick}
+                className={styles.spaceRight}
+              >
+                Previous
+              </ActionButton>
+              <ActionButton
+                data-automation-id="Finish"
+                iconProps={{ iconName: 'ChromeBackMirrored' }}
+                onClick={this.nextClick}
+                className={styles.reverseDirection}
+              >
+                Next
+              </ActionButton>
+            </div>
           </div>
-          <div id="attachmentModalSub" className="ms-modalExample-body">
-            <form>
-              <Dropdown
-                label="Type of Document"
-                selectedKey={attachment ? attachment!.typeOfDocument : undefined}
-                onChanged={this.changeTypeOfDocument}
-                placeholder="Select a type of document..."
-                options={[
-                  { key: 'A', text: 'Option a' },
-                  { key: 'B', text: 'Option b' },
-                  { key: 'C', text: 'Option c' },
-                  { key: 'D', text: 'Option d' },
-                  { key: 'E', text: 'Option e' },
-                  { key: 'F', text: 'Option f' },
-                  { key: 'G', text: 'Option g' }
-                ]}
-              />
-              <TextField label="Choose a file" readOnly placeholder="File name" value={attachment.name} />
-              {icon}
-              <input type="file" id={`addAttachment`}
-                accept="application/pdf"
-                onChange={this._changeFileSelection} />
-            </form>
-            <DefaultButton onClick={this.clearAttachment} text="Clear" />
-            <DefaultButton onClick={this.saveAttachmentModal} text="Ok" />
-            <DefaultButton onClick={this.closeAttachmentModal} text="Cancel" />
-          </div>
-        </Modal>
-        <TextField placeholder="Filter by name" onChanged={this.onFilterChange}></TextField>
-        <DetailsList
-          items={items}
-          columns={columns}
-          setKey="set"
-          layoutMode={DetailsListLayoutMode.justified}
-          selectionPreservedOnEmptyClick={false}
-          selectionMode={SelectionMode.none}
-          compact={isCompactMode}
-          isHeaderVisible={true}
-          onItemInvoked={this._onItemInvoked}
-          onRenderItemColumn={this._onRenderColumn}
-        />
-        <DefaultButton onClick={this.openNewItemModal} text="Add Item" />
-        <DefaultButton onClick={this.previousClick} text="previous" />
-        <DefaultButton onClick={this.nextClick} text="next" />
-
+        </div>
       </div>
     );
   }
-  private _onRenderColumn = (item: any, index: number, column: IColumn) => {
+  private _getSelectionDetails(): IVendorComplain {
+    const selectionCount = this._selection.getSelectedCount();
+    switch (selectionCount) {
+      case 0:
+        return null;
+      case 1:
+        return this._selection.getSelection()[0] as IVendorComplain;
+      default:
+        return null;
+    }
+  }
+  private _onRenderColumn = (item: IVendorComplain, index: number, column: IColumn) => {
     const self = this;
     let value = null;
     if (item && column) {
-      const { key, isEditable } = item;
+      const { key, isEditable, isCloned, canBeEditable } = item;
 
       if (column.fieldName) {
         value = item[column.fieldName];
         switch (column.fieldName) {
           case 'isEditable':
-            return <Checkbox label="" checked={value} disabled={false}
+            return <Checkbox label="" checked={value} disabled={!canBeEditable}
               onChange={self.toggleEditable(key)}></Checkbox>;
           case 'upcpart1':
           case 'upcpart2':
           case 'upcpart3':
           case 'upcpart4':
+            // return <span>{item!['upc']![column.fieldName]}</span>;
+            return <TextField disabled={!isEditable} value={item!['upc']![column.fieldName]}
+              onChanged={this.upcChange(column.fieldName, key)}></TextField>;
           case 'gtin':
           case 'corporateItemCode':
-            return <span>{value}</span>;
+            return <TextField disabled={isCloned ? true : (!isEditable)} value={value}
+              onChanged={this.valuesChanged(column.fieldName, key)}></TextField>;
           case 'warningText':
           case 'itemDescription':
-
             return <TextField readOnly={true} value={value} onClick={self.showModal(column.fieldName, key)}></TextField>;
-
           case 'isProp65':
           case 'isOnLabel':
           case 'foodInd':
-
             return <Dropdown
               label=""
-              disabled={!isEditable}
+              disabled={isCloned ? true : (!isEditable)}
               selectedKey={value}
               onChanged={this.onDropdownChange(column.fieldName, key)}
-              placeholder=""
+              placeHolder=""
               options={[
                 { key: 'Y', text: 'Yes' },
                 { key: 'N', text: 'No' },
               ]}
             />;
-
           case 'effFromDate':
             const firstDayOfWeek = DayOfWeek.Sunday;
             return <DatePicker
               value={new Date(value)}
-              disabled={!isEditable}
+              disabled={isCloned ? true : (!isEditable)}
               firstDayOfWeek={firstDayOfWeek}
               strings={DayPickerStrings}
               placeholder="Select a date"
@@ -741,21 +811,25 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       } else if (column.key == 'isDelete') {
         return <IconButton
           iconProps={{ iconName: 'Delete' }} title="Delete" ariaLabel="Delete" onClick={self.deleteItem(key)}></IconButton>;
-      } else if (column.key == 'attachment') {
-        return <IconButton
-          iconProps={{ iconName: 'Attach' }} title="Attachment" ariaLabel="Attachment" onClick={self.openAttachmentModal(key)}></IconButton>;
       }
+      // else if (column.key == 'attachment') {
+      //   return <IconButton
+      //     iconProps={{ iconName: 'Attach' }} title="Attachment" ariaLabel="Attachment" onClick={self.openAttachmentModal(key)}></IconButton>;
+      // }
     }
   }
   private _onItemInvoked = (item: any): void => {
     const { items } = this.state;
     const filter = items.filter(x => x.key == item.key);
-    if (filter) {
-      filter[0].isEditable = !filter[0].isEditable;
+    if (filter && filter.length > 0) {
+      const { canBeEditable } = filter[0];
+      if (canBeEditable) {
+        filter[0].isEditable = !filter[0].isEditable;
+        this.setState({
+          items: items.slice()
+        });
+      }
     }
-    this.setState({
-      items: items.slice()
-    });
   }
   private _onColumnClick = (ev: React.MouseEvent<HTMLElement>, column: IColumn): void => {
     const { columns, items } = this.state;

@@ -1,5 +1,4 @@
 {
-  // "extends": "@microsoft/sp-tslint-rules/base-tslint.json",
   "rules": {
     "class-name": false,
     "export-name": false,

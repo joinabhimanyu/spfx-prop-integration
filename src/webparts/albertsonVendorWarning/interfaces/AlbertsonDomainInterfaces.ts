@@ -1,4 +1,46 @@
 
+export type VendorOptions = {
+  value?: string;
+  label?: string;
+};
+
+export interface ISite {
+  Id?: string;
+  MasterUrl?: string;
+  CustomMasterUrl?: string;
+  ServerRelativeUrl?: string;
+  Title?: string;
+  Description?: string;
+  Url?: string;
+  IsCurrentSubSite?: boolean;
+}
+
+export enum UserRole {
+  Admin,
+  Vendor,
+  VendorManager
+}
+export type UserGroup = {
+  Description?: string;
+  Id?: number;
+  LoginName?: string;
+  OnlyAllowMembersViewMembership?: boolean;
+  OwnerTitle?: string;
+  PrincipalType?: string;
+  Title?: string;
+};
+export interface IUserManager {
+  Id?: number;
+  Email?: string;
+  IsEmailAuthenticationGuestUser?: boolean;
+  IsShareByEmailGuestUser?: boolean;
+  IsSiteAdmin?: boolean;
+  Title?: string;
+  LoginName?: string;
+  PrincipalType?: string;
+  Role?: UserRole;
+  UserGroups?: UserGroup[];
+}
 export interface IUPC {
   upcpart1?: string;
   upcpart2?: string;
@@ -12,19 +54,13 @@ export interface IVendorComplain {
   corporateItemCode?: string;
   warningText?: string;
   itemDescription?: string;
-  isProp65: string;
-  isOnLabel: string;
+  isProp65?: string;
+  isOnLabel?: string;
   foodInd?: string;
-  effFromDate?: string;
+  effFromDate?: Date;
   isEditable: boolean;
-  canBeEditable: boolean;
   isCloned: boolean;
-}
-
-export interface INewItem {
-  upc?: IUPC;
-  gtin?: string;
-  corporateItemCode?: string;
+  clonedFrom?: number;
 }
 
 export interface IAttachmentProps {
@@ -37,7 +73,10 @@ export interface IAttachmentProps {
   vendName?: string;
   files?: IAttachment[];
   setFiles: Function;
+  _toggleSpinner: Function;
   changeStep: Function;
+  _showAlertDialog:Function;
+  _showConfirmDialog:Function;
 }
 
 export interface IAttachment {
@@ -54,9 +93,8 @@ export interface IModalData {
 }
 
 export enum Step {
-  step1,
-  step2,
-  step3
+  step1 = 1,
+  step2 = 2
 }
 export interface IContactInfo {
   firstname?: string;

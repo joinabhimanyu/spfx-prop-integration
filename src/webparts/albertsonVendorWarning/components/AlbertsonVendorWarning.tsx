@@ -1,225 +1,129 @@
 import * as React from 'react';
 import styles from './AlbertsonVendorWarning.module.scss';
-import { IVendorComplain, IModalData, Step, IValidationError, IValidationFields, INewItem } from '../interfaces/AlbertsonDomainInterfaces';
+import { IVendorComplain, IModalData, Step, IValidationError, IValidationFields } from '../interfaces/AlbertsonDomainInterfaces';
 import { TextField } from 'office-ui-fabric-react/lib/TextField';
-import { DetailsList, DetailsListLayoutMode, Selection, SelectionMode, IColumn } from 'office-ui-fabric-react/lib/DetailsList';
+import { DetailsList, IDetailsList, DetailsListLayoutMode, Selection, SelectionMode, IColumn, IDetailsRowProps, DetailsRow } from 'office-ui-fabric-react/lib/DetailsList';
 import { Modal } from 'office-ui-fabric-react/lib/Modal';
 import { DefaultButton, IconButton, ActionButton } from 'office-ui-fabric-react/lib/Button';
 import { Checkbox } from 'office-ui-fabric-react/lib/Checkbox';
 import { DatePicker, DayOfWeek, IDatePickerStrings } from 'office-ui-fabric-react/lib/DatePicker';
 import { debounce } from '@microsoft/sp-lodash-subset';
 import { Dropdown } from 'office-ui-fabric-react/lib/Dropdown';
+import { IUPC } from '../interfaces/AlbertsonDomainInterfaces';
+import { _columns, DayPickerStrings, _errColumns, IValidationBlob, _itemsValidationBlob } from './AlbertsonConstants';
+import { getTheme, mergeStyles } from 'office-ui-fabric-react/lib/Styling';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
-import { IUPC } from '../../../../lib/webparts/albertsonVendorWarning/interfaces/AlbertsonDomainInterfaces';
+import Dialog, { DialogType } from 'office-ui-fabric-react/lib/Dialog';
 
+const InfoSolid = () => (
+  <Icon iconName="InfoSolid" className="ms-IconExample" />
+);
+const theme = getTheme();
 export interface IVendorComplainExampleState {
   columns: IColumn[];
   items: IVendorComplain[];
   isCompactMode: boolean;
   showModal: boolean;
   modalData: IModalData;
-  showNewItemModal: boolean;
-  newItem: INewItem;
   selectedItem?: IVendorComplain;
+  validationError?: IValidationError;
+  deleteKey?: number;
 }
-
-// let _items: IVendorComplain[] = [];
-
-const DayPickerStrings: IDatePickerStrings = {
-  months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-
-  shortMonths: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-
-  days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-
-  shortDays: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-
-  goToToday: 'Go to today',
-  prevMonthAriaLabel: 'Go to previous month',
-  nextMonthAriaLabel: 'Go to next month',
-  prevYearAriaLabel: 'Go to previous year',
-  nextYearAriaLabel: 'Go to next year',
-};
+export interface ISelectRowArgs {
+  index?: number;
+}
 
 export default class AlbertsonVendorWarning extends React.Component<any, IVendorComplainExampleState> {
   private _selection: Selection;
   private _debounceModalChangeValue: any;
-  private _debounceFilterChangeValue: any;
+  // private _debounceFilterChangeValue: any;
+  private _root = null;
+  private _suppressEvent: boolean = false;
+
+  //#region Generic events
+  private setSelectedRow = (arg: ISelectRowArgs) => {
+    // this._selection.setChangeEvents(false, true);
+    this._suppressEvent = true;
+    const self = this;
+    setTimeout(() => {
+      self._selection.setAllSelected(false);
+      if (arg.index != null) {
+        setTimeout(() => {
+          self._selection.setIndexSelected(arg.index, true, false);
+          self.validateSelectedItem();
+          self._suppressEvent = false;
+          setTimeout(() => {
+            self.setState({ items: self.state.items.slice() });
+          });
+        });
+      } else {
+        self._suppressEvent = false;
+      }
+    });
+  }
+  private _resetSelectedItem = (): void => {
+    let { items } = this.state;
+    items = items.map((item) => ({
+      ...item,
+      isEditable: false
+    }));
+    this.setState({
+      items: items.slice(),
+      selectedItem: null
+    });
+  }
+  private _setSelectedItem = (_item: IVendorComplain): void => {
+    const { items } = this.state;
+    const filter = items.filter(x => x.key == _item.key);
+    filter[0].isEditable = true;
+    this.setState({
+      items: items.slice(),
+      selectedItem: {
+        ..._item,
+        isEditable: true
+      }
+    });
+  }
   constructor(props: any) {
     super(props);
     this._selection = new Selection({
-      onSelectionChanged: () => this.setState({ selectedItem: this._getSelectionDetails() })
-    });
-    const _columns: IColumn[] = [
-      {
-        key: 'isEditable',
-        name: '',
-        fieldName: 'isEditable',
-        minWidth: 10,
-        maxWidth: 10,
-        isResizable: true,
-        data: 'boolean',
-        isPadded: true
-      },
-      {
-        key: 'isDelete',
-        name: '',
-        fieldName: '',
-        minWidth: 10,
-        maxWidth: 10,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'upcpart1',
-        name: '',
-        fieldName: 'upcpart1',
-        minWidth: 40,
-        maxWidth: 50,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: false,
-        onColumnClick: this._onColumnClick,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'upcpart2',
-        name: '',
-        fieldName: 'upcpart2',
-        minWidth: 40,
-        maxWidth: 50,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: false,
-        onColumnClick: this._onColumnClick,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'upcpart3',
-        name: 'UPC Name',
-        fieldName: 'upcpart3',
-        minWidth: 70,
-        maxWidth: 90,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: false,
-        onColumnClick: this._onColumnClick,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'upcpart4',
-        name: '',
-        fieldName: 'upcpart4',
-        minWidth: 70,
-        maxWidth: 90,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: false,
-        onColumnClick: this._onColumnClick,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'gtin',
-        name: 'GTIN/Item Id',
-        fieldName: 'gtin',
-        minWidth: 100,
-        maxWidth: 150,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: false,
-        onColumnClick: this._onColumnClick,
-
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'corporateItemCode',
-        name: 'Corporate Item Code',
-        fieldName: 'corporateItemCode',
-        minWidth: 100,
-        maxWidth: 150,
-        isResizable: true,
-        isSorted: true,
-        isSortedDescending: false,
-        onColumnClick: this._onColumnClick,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'warningText',
-        name: 'Warning Text/Removal Reason',
-        fieldName: 'warningText',
-        minWidth: 150,
-        maxWidth: 200,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'itemDescription',
-        name: 'Item Desc',
-        fieldName: 'itemDescription',
-        minWidth: 150,
-        maxWidth: 200,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'isProp65',
-        name: 'Prop 65 ?',
-        fieldName: 'isProp65',
-        minWidth: 90,
-        maxWidth: 100,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'isOnLabel',
-        name: 'On Label ?',
-        fieldName: 'isOnLabel',
-        minWidth: 90,
-        maxWidth: 100,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'foodInd',
-        name: 'Food ?',
-        fieldName: 'foodInd',
-        minWidth: 90,
-        maxWidth: 100,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
-      },
-      {
-        key: 'effFromDate',
-        name: 'Eff From Date',
-        fieldName: 'effFromDate',
-        minWidth: 150,
-        maxWidth: 200,
-        isResizable: true,
-        data: 'string',
-        isPadded: true
+      onSelectionChanged: () => {
+        const self = this;
+        const _item = this._getSelectionDetails() as IVendorComplain;
+        const { selectedItem } = this.state;
+        let { items } = this.state;
+        if (!this._suppressEvent) {
+          if (JSON.stringify(_item) != JSON.stringify(selectedItem)) {
+            this.validateSelectedItem();
+            setTimeout(() => {
+              const { validationError } = self.state;
+              if (validationError!.hasError) {
+                self.setSelectedRow({ index: selectedItem.key });
+              } else {
+                if (!_item) {
+                  self._resetSelectedItem();
+                } else {
+                  self._resetSelectedItem();
+                  setTimeout(() => {
+                    self._setSelectedItem(_item);
+                  });
+                }
+              }
+            });
+          }
+        }
       }
-    ];
+    });
     this.state = {
       columns: _columns,
       items: [],
       modalData: {},
       isCompactMode: false,
       showModal: false,
-      showNewItemModal: false,
-      newItem: { upc: {} },
-      selectedItem: this._getSelectionDetails()
+      selectedItem: this._getSelectionDetails(),
+      validationError: {
+        errors: []
+      }
     };
     this._debounceModalChangeValue = (text: string) => {
       const { modalData } = this.state;
@@ -230,134 +134,341 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         }
       });
     };
-    this._debounceFilterChangeValue = (text: string) => {
-      const { items } = this.state;
-      this.setState({ items: text ? items.filter(i => `${i!.upc!.upcpart1} ${i!.upc!.upcpart2} ${i!.upc!.upcpart3} ${i!.upc!.upcpart4}`.toLowerCase().indexOf(text) > -1).slice() : items.slice() });
-    };
+    // this._debounceFilterChangeValue = (text: string) => {
+    //   const { items } = this.state;
+    //   this.setState({ items: text ? items.filter(i => `${i!.upc!.upcpart1} ${i!.upc!.upcpart2} ${i!.upc!.upcpart3} ${i!.upc!.upcpart4}`.toLowerCase().indexOf(text) > -1).slice() : items.slice() });
+    // };
     this._debounceModalChangeValue = debounce(this._debounceModalChangeValue, 500);
-    this._debounceFilterChangeValue = debounce(this._debounceFilterChangeValue, 500);
-  }
-  private deleteItem = (key: number) => () => {
-    const result = confirm('You sure you want to delete this?');
-    if (result) {
-      let { items } = this.state;
-      items = items.filter((item, index) => index != key);
-      items = items.map((item, index) => {
-        return {
-          ...item,
-          key: index
-        };
-      });
-      this.setState({
-        items: items.slice()
-      });
-    }
-  }
-  private toggleEditable = (key: number) => (ev: React.FormEvent<HTMLElement>, isChecked: boolean) => {
-    const { items } = this.state;
-    const filter = items.filter(x => x.key == key);
-    if (filter && filter.length > 0) {
-      const { canBeEditable } = filter[0];
-      if (canBeEditable) {
-        filter[0].isEditable = !filter[0].isEditable;
-        this.setState({
-          items: items.slice()
-        });
-      }
-    }
+    // this._debounceFilterChangeValue = debounce(this._debounceFilterChangeValue, 500);
   }
   public async componentDidMount() {
     let { items } = this.props;
     if (items && items.length > 0) {
       items = items.slice();
       items = this._sortItems(items, 'key');
-    } else {
-      items = await this.testSeedItems();
-      items = this._sortItems(items, 'key');
     }
     this.setState({
       items: items.slice()
     });
   }
-  private async testSeedItems(): Promise<IVendorComplain[]> {
 
-    return new Promise<IVendorComplain[]>((resolve, reject) => {
-      const items: IVendorComplain[] = [
-        {
-          key: 0, upc: { upcpart1: '0', upcpart2: '0', upcpart3: '44600', upcpart4: '32071' } as IUPC,
-          gtin: '12345678901234', corporateItemCode: '12345678', warningText: 'this product can get expired', itemDescription: 'demo desc', isProp65: 'Y', isOnLabel: 'Y', foodInd: 'N', effFromDate: new Date('12/20/2018').toLocaleDateString(), isEditable: false, canBeEditable: true, isCloned: false
-        },
-        {
-          key: 1, upc: { upcpart1: '0', upcpart2: '0', upcpart3: '44600', upcpart4: '38025' } as IUPC,
-          gtin: '12345678901289', corporateItemCode: '25689543', warningText: '', itemDescription: 'demo desc', isProp65: 'Y', isOnLabel: 'Y', foodInd: 'N', effFromDate: new Date('12/31/2018').toLocaleDateString(), isEditable: false, canBeEditable: true, isCloned: false
-        },
-      ];
-      setTimeout(() => {
-        resolve(items as IVendorComplain[]);
-      }, 10);
-    });
-  }
   private async seedItems(): Promise<IVendorComplain[]> {
     const items: IVendorComplain[] = [];
-    // get previous entered items from sharepoint
     return Promise.resolve(items);
   }
-  private showModal = (fieldName: string, index: number) => (event: any) => {
-    const data = this.state.items[index];
-    if (data) {
-      this.setState({
-        showModal: true,
-        modalData: {
-          key: fieldName,
-          value: data[fieldName],
-          index: index
-        }
+  // private onFilterChange = (text: string): void => {
+  //   this._debounceFilterChangeValue(text);
+  // }
+  //#endregion
+
+  //#region Grid change events
+  private propagateChangeToClonedRow = (key: number, value: any, fieldName: string, items: IVendorComplain[]): IVendorComplain[] => {
+    const filter = items.filter(x => x.clonedFrom == key);
+    if (filter && filter.length > 0) {
+      filter.forEach((item) => {
+        item[fieldName] = value;
       });
     }
-  }
-  private onDropdownChange = (fieldName: string, key: number) => (value: any) => {
-    const { items } = this.state;
-    if (fieldName) {
-      if (items[key]) {
-        items[key]![fieldName] = value.key || 'N';
-        this.setState({
-          items: items.slice()
-        });
-      }
-    } else {
-      alert('no item selected');
-    }
+    return (items as IVendorComplain[]).slice();
   }
   private upcChange = (fieldName: string, key: number) => (text: string) => {
     if (fieldName) {
-      const { items } = this.state;
-      if (items[key]) {
-        items[key]!['upc']![fieldName] = text || '';
+      const { items, selectedItem } = this.state;
+      let selected: any = items.filter(x => x.key == key);
+      if (selected && selected.length > 0) {
+        selected = selected[0] as IVendorComplain;
+        selected!['upc']![fieldName] = text || '';
+        if (selectedItem) {
+          selectedItem!['upc']![fieldName] = text || '';
+        }
         this.setState({
-          items: items.slice()
+          items: items.slice(),
+          selectedItem
+        });
+        const self = this;
+        setTimeout(() => {
+          self.validateSelectedItem();
+          setTimeout(() => {
+            self.setState({ items: self.state.items.slice() });
+          });
         });
       }
     }
   }
   private valuesChanged = (fieldName: string, key: number) => (text: string) => {
     if (fieldName) {
-      const { items } = this.state;
-      if (items[key]) {
-        items[key]![fieldName] = text || '';
+      let { items, selectedItem } = this.state;
+      let selected: any = items.filter(x => x.key == key);
+      if (selected && selected.length > 0) {
+        selected = selected[0] as IVendorComplain;
+        selected![fieldName] = text || '';
+        if (selectedItem) {
+          selectedItem![fieldName] = text || '';
+        }
+        items = this.propagateChangeToClonedRow(key, text || '', fieldName, items);
         this.setState({
-          items: items.slice()
+          items: items.slice(),
+          selectedItem
+        });
+        const self = this;
+        setTimeout(() => {
+          self.validateSelectedItem();
+          setTimeout(() => {
+            self.setState({ items: self.state.items.slice() });
+          });
         });
       }
     }
   }
-  private onSelectDate = (index: number) => (date: Date | null | undefined) => {
+  private onDropdownChange = (fieldName: string, key: number) => (value: any) => {
+    let { items, selectedItem } = this.state;
+    if (fieldName) {
+      let selected: any = items.filter(x => x.key == key);
+      if (selected && selected.length > 0) {
+        selected = selected[0] as IVendorComplain;
+        selected![fieldName] = value.key || 'N';
+        selectedItem![fieldName] = value.key || 'N';
+        items = this.propagateChangeToClonedRow(key, value.key || 'N', fieldName, items);
+        this.setState({
+          items: items.slice(),
+          selectedItem
+        });
+        const self = this;
+        setTimeout(() => {
+          self.validateSelectedItem();
+          setTimeout(() => {
+            self.setState({ items: self.state.items.slice() });
+          });
+        });
+      }
+    }
+  }
+  //#endregion
+
+  //#region Validation
+  private validateUPC = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _upcBlob = _itemsValidationBlob.filter(x => x.field == 'upcpart1' || x.field == 'upcpart2' || x.field == 'upcpart3' || x.field == 'upcpart4');
+    const [part1, part2, part3, part4] = _upcBlob;
+    (part1.required && !item!.upc!.upcpart1) || (
+      part2.required &&
+      !item!.upc!.upcpart2
+    ) || (part3.required && !item!.upc!.upcpart3) || (
+        part4.required && !item!.upc!.upcpart4
+      ) ? (function () {
+        result.fields.push({
+          field: 'UPC',
+          errorMessage: 'Required'
+        });
+        result.valid = false;
+      }()) : (function () {
+        const [pat1, pat2, pat3, pat4] = [part1.pattern, part2.pattern, part3.pattern, part4.pattern];
+        if (!pat1.test(item!.upc!.upcpart1) || !pat2.test(item!.upc!.upcpart2) || !pat3.test(item!.upc!.upcpart3) || !pat4.test(item!.upc!.upcpart4)) {
+          result.fields.push({
+            field: 'UPC',
+            errorMessage: 'Invalid'
+          });
+          result.valid = false;
+        }
+      }());
+    return result;
+  }
+  private validateGTIN = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _gtinBlob = _itemsValidationBlob.filter(x => x.field == 'gtin')[0];
+    (_gtinBlob.required && !item.gtin) ? (function () {
+      result.fields.push({
+        field: 'gtin',
+        errorMessage: 'Required'
+      }); result.valid = false;
+    }()) : (function () {
+      if (!_gtinBlob.pattern.test(item!.gtin)) {
+        result.fields.push({
+          field: 'gtin',
+          errorMessage: 'Invalid'
+        }); result.valid = false;
+      }
+    }());
+    return result;
+  }
+  private validateCorporateItemCode = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _itemCodeBlob = _itemsValidationBlob.filter(x => x.field == 'corporateItemCode')[0];
+    (_itemCodeBlob.required && !item.corporateItemCode) ? (function () {
+      result.fields.push({
+        field: 'corporateItemCode',
+        errorMessage: 'Required'
+      }); result.valid = false;
+    }()) : (function () {
+      if (!_itemCodeBlob.pattern.test(item.corporateItemCode)) {
+        result.fields.push({
+          field: 'corporateItemCode',
+          errorMessage: 'Invalid'
+        }); result.valid = false;
+      }
+    }());
+    return result;
+  }
+  private validateWarningText = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _warningTextBlob = _itemsValidationBlob.filter(x => x.field == 'warningText')[0];
+    (_warningTextBlob.required && !item.warningText) ? (function () {
+      result.fields.push({
+        field: 'warningText',
+        errorMessage: 'Required'
+      }); result.valid = false;
+    }()) : (function () {
+      if (!_warningTextBlob.pattern.test(item.warningText)) {
+        result.fields.push({
+          field: 'warningText',
+          errorMessage: 'Invalid'
+        }); result.valid = false;
+
+      }
+    }());
+    return result;
+  }
+  private validateItemDescription = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _itemDescriptionBlob = _itemsValidationBlob.filter(x => x.field == 'itemDescription')[0];
+    (_itemDescriptionBlob.required && !item.itemDescription) ? (function () {
+      result.fields.push({
+        field: 'itemDescription',
+        errorMessage: 'Required'
+      }); result.valid = false;
+    }()) : (function () {
+      if (!_itemDescriptionBlob.pattern.test(item.itemDescription)) {
+        result.fields.push({
+          field: 'itemDescription',
+          errorMessage: 'Invalid'
+        }); result.valid = false;
+      }
+    }());
+    return result;
+  }
+  private validateProp65 = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _isProp65Blob = _itemsValidationBlob.filter(x => x.field == 'isProp65')[0];
+    (_isProp65Blob.required && item.isProp65 == null) ? (function () {
+      result.fields.push({
+        field: 'isProp65',
+        errorMessage: 'Required'
+      }); result.valid = false;
+    }()) : (function () {
+    }());
+    return result;
+  }
+  private validateOnLabel = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _isOnLabelBlob = _itemsValidationBlob.filter(x => x.field == 'isOnLabel')[0];
+    (_isOnLabelBlob.required && item.isOnLabel == null) ? (function () {
+      result.fields.push({
+        field: 'isOnLabel',
+        errorMessage: 'Required'
+      }); result.valid = false;
+
+    }()) : (function () {
+    }());
+    return result;
+  }
+  private validateFoodInd = (item: IVendorComplain): { fields: IValidationFields[], valid: boolean } => {
+    const result = { fields: [], valid: true };
+    const _foodIndBlob = _itemsValidationBlob.filter(x => x.field == 'foodInd')[0];
+    (_foodIndBlob.required && item.foodInd == null) ? (function () {
+      result.fields.push({
+        field: 'foodInd',
+        errorMessage: 'Required'
+      }); result.valid = false;
+    }()) : (function () {
+    }());
+    return result;
+  }
+  private validateSelectedItem = (): void => {
+    const { selectedItem } = this.state;
+    const result = this.validateItem(selectedItem as IVendorComplain);
+    this.setState({
+      validationError: result
+    });
+    return;
+  }
+  private validateItem = (_item: IVendorComplain): IValidationError => {
+    const result: IValidationError = { errors: [], hasError: false };
+    let errors = [];
+    if (_item) {
+      const { vUPC, vGTIN, vCIC, vWarningText, vItemDescription, vProp65, vOnLabel, vFoodInd } =
+        ({
+          vUPC: this.validateUPC({ ..._item }), vGTIN: this.validateGTIN({ ..._item }), vCIC: this.validateCorporateItemCode({ ..._item }),
+          vWarningText: this.validateWarningText({ ..._item }), vItemDescription: this.validateItemDescription({ ..._item }),
+          vProp65: this.validateProp65({ ..._item }), vOnLabel: this.validateOnLabel({ ..._item }), vFoodInd: this.validateFoodInd({ ..._item })
+        });
+      if (_item.isCloned) {
+        if (!vUPC.valid) {
+          errors = errors.concat([...vUPC.fields]);
+        }
+      } else {
+        if (!vUPC.valid && !vGTIN.valid && !vCIC.valid) {
+          errors = errors.concat([...vUPC.fields, ...vGTIN.fields, ...vCIC.fields]);
+        } else {
+          const upcFields = vUPC.fields.filter(x => x.errorMessage == 'Invalid');
+          const gtinFields = vGTIN.fields.filter(x => x.errorMessage == 'Invalid');
+          const cicFields = vCIC.fields.filter(x => x.errorMessage == 'Invalid');
+          errors = errors.concat([...upcFields, ...gtinFields, ...cicFields]);
+        }
+        if (!vWarningText.valid || !vItemDescription.valid || !vProp65.valid || vOnLabel.valid || !vFoodInd.valid) {
+          errors = errors.concat([...vWarningText.fields, ...vItemDescription.fields, ...vProp65.fields, ...vOnLabel.fields, ...vFoodInd.fields]);
+        }
+      }
+      if (errors.length > 0) {
+        result.errors = errors.slice();
+        result.hasError = true;
+      }
+    }
+    return result;
+  }
+  //#endregion
+
+  //#region Edit Modal
+  private showModal = (fieldName: string, key: number) => (event: any) => {
     const { items } = this.state;
-    if (items[index]) {
-      items[index].effFromDate = date.toLocaleDateString();
+    let selected: any = items.filter(x => x.key == key);
+    if (selected && selected.length > 0) {
+      selected = selected[0] as IVendorComplain;
       this.setState({
-        items: items.slice()
+        showModal: true,
+        modalData: {
+          key: fieldName,
+          value: selected[fieldName],
+          index: key
+        }
       });
     }
+  }
+  private saveModal = (): void => {
+    let { modalData, items, selectedItem } = this.state;
+    if (modalData && items) {
+      let selected: any = items.filter(x => x.key == modalData.index);
+      if (selected && selected.length > 0) {
+        selected = selected[0] as IVendorComplain;
+        selected[modalData.key] = modalData.value;
+      }
+      if (selectedItem) {
+        selectedItem![modalData.key] = modalData.value;
+      }
+    }
+    items = this.propagateChangeToClonedRow(modalData.index, modalData.value, modalData.key, items);
+    this.setState({
+      showModal: false,
+      items: items.slice(),
+      modalData: {},
+      selectedItem
+    });
+    const self = this;
+    setTimeout(() => {
+      self.validateSelectedItem();
+      setTimeout(() => {
+        self.setState({ items: self.state.items.slice() });
+      });
+    });
   }
   private closeModal = (): void => {
     this.setState({
@@ -365,223 +476,107 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       modalData: {},
     });
   }
-  private saveModal = (): void => {
-    const { modalData, items } = this.state;
-    if (modalData && items) {
-      const selected = items[modalData.index];
-      if (selected) {
-        selected[modalData.key] = modalData.value;
-      }
-    }
-    this.setState({
-      showModal: false,
-      items: items.slice(),
-      modalData: {},
-    });
-  }
   private changeModalValue = (text: string): void => {
     this._debounceModalChangeValue(text);
   }
-  private onFilterChange = (text: string): void => {
-    this._debounceFilterChangeValue(text);
-  }
-  private openNewItemModal = () => {
-    this.setState({
-      showNewItemModal: true,
-      newItem: { upc: {} }
-    });
-  }
-  private closeNewItemModal = () => {
-    this.setState({
-      showNewItemModal: false
-    });
-  }
-  private validateUPC = (item: INewItem): { fields: IValidationFields[], valid: boolean } => {
-    const result = { fields: [], valid: true };
-    !item!.upc!.upcpart1 || !item!.upc!.upcpart2 || !item!.upc!.upcpart3 || !item!.upc!.upcpart4 ? (function () {
-      result.fields.push({
-        field: 'UPC',
-        errorMessage: 'Invalid UPC'
-      });
-      result.valid = false;
-    }()) : (function () {
-    }());
-    return result;
-  }
-  private validateGTIN = (item: INewItem): { fields: IValidationFields[], valid: boolean } => {
-    const result = { fields: [], valid: true };
-    !item.gtin ? (function () {
-      result.fields.push({
-        field: 'gtin',
-        errorMessage: 'GTIN cannot be blank'
-      }); result.valid = false;
+  //#endregion
 
-    }()) : (function () {
-    }());
-    return result;
-  }
-  private validateCorporateItemCode = (item: INewItem): { fields: IValidationFields[], valid: boolean } => {
-    const result = { fields: [], valid: true };
-    !item.corporateItemCode ? (function () {
-      result.fields.push({
-        field: 'corporateItemCode',
-        errorMessage: 'Corporate Item Code cannot be blank'
-      }); result.valid = false;
-
-    }()) : (function () {
-    }());
-    return result;
-  }
-  private validateNewItem = (): IValidationError => {
-    const result: IValidationError = { errors: [], hasError: false };
-    const { newItem } = this.state;
-    const vUPC = this.validateUPC({ ...newItem });
-    const vGTIN = this.validateGTIN({ ...newItem });
-    const vCIC = this.validateCorporateItemCode({ ...newItem });
-    if (vUPC.valid || vGTIN.valid || vCIC.valid) {
-      return result;
+  //#region Navigation
+  private executeNavigation = (step: Step = null, target: string = null) => {
+    if (target == 'reset') {
+      if (this.props.resetDetails) {
+        this.props.resetDetails();
+      }
     } else {
-      result.errors = [...vUPC.fields, ...vGTIN.fields, ...vCIC.fields];
-      result.hasError = true;
-    }
-    return result;
-  }
-  private changeNewItemValue = (fieldName: string) => (text: string) => {
-    if (fieldName) {
-      const { newItem } = this.state;
-      if (fieldName.indexOf(".") == -1) {
+      const { items } = this.state;
+      const results: IValidationError[] = items.map(item => this.validateItem(item as IVendorComplain));
+      if (results.filter(x => x.hasError).length > 0) {
+        this.props._showAlertDialog({ type: DialogType.normal, title: 'Invalid', subText: 'Please correct the data before proceeding' });
+        return;
+      }
+      if (this.props.setItems && typeof this.props.setItems == 'function') {
         this.setState({
-          newItem: {
-            ...newItem,
-            [fieldName]: text
-          }
+          selectedItem: null
         });
-      } else {
-        const parts = fieldName.split(".");
-        this.setState({
-          newItem: {
-            ...newItem,
-            [parts[0] || '']: {
-              ...newItem[parts[0] || ''],
-              [parts[1] || '']: text
+        const self = this;
+        setTimeout(() => {
+          self.props.setItems(items.map(item => ({ ...item, isEditable: false })).slice());
+          setTimeout(() => {
+            if (step && self.props.changeStep) {
+              self.props.changeStep(step);
             }
-          }
+            if (target == "submit") {
+              if (self.props.submitDetails) {
+                self.props.submitDetails();
+              }
+            }
+          });
         });
       }
-
     }
-  }
-  private addItem = (): void => {
-    const { items, newItem } = this.state;
-    const result = this.validateNewItem();
-    if (result.hasError) {
-      console.log(JSON.stringify(result.errors));
-    } else {
-      let maxKey = 0;
-      if (items.length > 0) {
-        items.forEach((item) => {
-          if (item!.key > maxKey) {
-            maxKey = item.key;
-          }
-        });
-        maxKey += 1;
-      }
-      items.push({
-        key: maxKey,
-        upc: {
-          ...newItem!.upc
-        },
-        gtin: newItem.gtin,
-        corporateItemCode: newItem.corporateItemCode,
-        warningText: '',
-        itemDescription: '',
-        isProp65: 'N',
-        isOnLabel: 'N',
-        foodInd: 'N',
-        effFromDate: new Date().toLocaleDateString(),
-        isEditable: false,
-        canBeEditable: true,
-        isCloned: false
-      });
-      this.setState({
-        items: items.slice(),
-        showNewItemModal: false
-      });
-    }
-
   }
   private previousClick = () => {
-    const { items } = this.state;
-    const vresult = this.validateOnNext();
-    if (vresult.hasError) {
-      alert(vresult.validationMessege);
-    } else {
-      if (this.props.setItems && typeof this.props.setItems == 'function') {
-        this.props.setItems(items);
-      }
-      if (this.props.changeStep) {
-        this.props.changeStep(Step.step1);
-      }
-    }
+    this.executeNavigation(Step.step1);
   }
-  private nextClick = () => {
-    const { items } = this.state;
-    const vresult = this.validateOnNext();
-    if (vresult.hasError) {
-      alert(vresult.validationMessege);
-    } else {
-      if (this.props.setItems && typeof this.props.setItems == 'function') {
-        this.props.setItems(items);
-      }
-      if (this.props.changeStep) {
-        this.props.changeStep(Step.step3);
-      }
-    }
+  private submitDetails = () => {
+    this.executeNavigation(null, "submit");
   }
-  private validateOnNext() {
-    const result = { validationMessege: null, hasError: false };
+  private resetDetails = () => {
+    this.executeNavigation(null, "reset");
+  }
+  //#endregion
+
+  //#region Add and Clone Item
+  private addItem = (): void => {
     let { items } = this.state;
-    items = items as IVendorComplain[];
-    let filter = items.filter(x => x.isEditable);
-    if (filter && filter.length > 0) {
-      result.validationMessege = "Unsaved changes detected. Please save to proceed";
-      result.hasError = true;
-    } else {
-      const invalidEntries = [];
-      for (let item of items) {
-        const arg: INewItem = {
-          upc: {
-            ...item.upc
-          },
-          gtin: item.gtin,
-          corporateItemCode: item.corporateItemCode
-        };
-        if (this.validateUPC({ ...arg }) || this.validateGTIN({ ...arg }) || this.validateCorporateItemCode({ ...arg })) {
-          continue;
-        } else {
-          invalidEntries.push(item);
+    let maxKey = 0;
+    if (items.length > 0) {
+      items.forEach((item) => {
+        if (item!.key > maxKey) {
+          maxKey = item.key;
         }
-      }
-      if (invalidEntries.length > 0) {
-        result.validationMessege = "Contains invalid entries";
-        result.hasError = true;
-      }
+      });
+      maxKey += 1;
     }
-    return result;
+    const _newItem: IVendorComplain = {
+      key: maxKey,
+      upc: { upcpart1: '', upcpart2: '', upcpart3: '', upcpart4: '' },
+      gtin: '',
+      corporateItemCode: '',
+      warningText: '',
+      itemDescription: '',
+      isProp65: null,
+      isOnLabel: null,
+      foodInd: null,
+      effFromDate: null,
+      isEditable: false,
+      isCloned: false,
+      clonedFrom: null
+
+    };
+    items.splice(0, 0, Object.assign({}, _newItem));
+    items = this.rearrangeIndices(items);
+    items = this._sortItems(items, 'key');
+    this.setState({
+      items: items.slice(),
+    });
+    const self = this;
+    setTimeout(() => {
+      self._resetSelectedItem();
+      setTimeout(() => {
+        self._setSelectedItem(items[0] as IVendorComplain);
+        setTimeout(() => {
+          self.setSelectedRow({ index: 0 });
+        });
+      });
+    });
   }
   private addUPCByCloningItem = (): void => {
     let { items, selectedItem } = this.state;
     items = items as IVendorComplain[];
     selectedItem = selectedItem as IVendorComplain;
     if (selectedItem) {
-      const arg: INewItem = {
-        upc: {
-          ...selectedItem.upc
-        },
-        gtin: selectedItem.gtin,
-        corporateItemCode: selectedItem.corporateItemCode
-      };
-      if (this.validateGTIN({ ...arg }) || this.validateCorporateItemCode({ ...arg })) {
+      if (this.validateGTIN({ ...selectedItem }) || this.validateCorporateItemCode({ ...selectedItem })) {
         let maxKey = 0;
         if (items.length > 0) {
           items.forEach((item) => {
@@ -591,24 +586,46 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
           });
           maxKey += 1;
         }
-        items.push({
+        const _newItem: IVendorComplain = {
           ...selectedItem,
           key: maxKey,
-          upc: {},
+          upc: { upcpart1: '', upcpart2: '', upcpart3: '', upcpart4: '' },
           isEditable: false,
-          canBeEditable: true,
-          isCloned: true
-        });
+          isCloned: true,
+          clonedFrom: selectedItem.key
+        };
+        items.splice(selectedItem.key + 1, 0, Object.assign({}, _newItem));
+        items = this.rearrangeIndices(items);
+        items = this._sortItems(items, 'key');
         this.setState({
           items: items.slice()
         });
+        const self = this;
+        setTimeout(() => {
+          self._resetSelectedItem();
+          setTimeout(() => {
+            self._setSelectedItem(items[selectedItem.key + 1] as IVendorComplain);
+            setTimeout(() => {
+              self.setSelectedRow({ index: selectedItem.key + 1 });
+            });
+          });
+        });
       } else {
-        alert('Invalid row to cloan. Please add either GTIN or Corporate Item Code');
+        this.props._showAlertDialog({ type: DialogType.normal, title: 'Invalid', subText: 'Invalid row to cloan. Please add either GTIN or Corporate Item Code' });
       }
     }
   }
+  //#endregion
+
+  //#region Render and Render Column
   public render() {
-    const { columns, isCompactMode, items, modalData, showModal, showNewItemModal, newItem, selectedItem } = this.state;
+    const listStyle = {
+      msListCell: {
+        backgroundColor: 'white'
+      }
+    };
+    let { columns, isCompactMode, items, modalData, showModal, selectedItem, validationError } = this.state;
+    items = items as IVendorComplain[];
     let modalHeader = null;
     let label = null;
     let isEditable = false;
@@ -624,9 +641,12 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
           label = "Item Description *";
           break;
       }
-      const item = items[modalData.index];
-      isEditable = item!.isEditable;
-      isCloned = item!.isCloned;
+      let item: any = items.filter(x => x.key == modalData.index);
+      if (item && item.length > 0) {
+        item = item[0];
+        isEditable = item!.isEditable;
+        isCloned = item!.isCloned;
+      }
     }
     let modalButtons = null;
     if (isCloned) {
@@ -641,44 +661,26 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         modalButtons = <DefaultButton onClick={this.closeModal} text="Close" />;
       }
     }
-    let addUpcDisabled: boolean = false;
+    let addUpcDisabled: boolean = validationError ? validationError!.hasError || false : false;
     if (!selectedItem) {
       addUpcDisabled = true;
     } else {
-      const { gtin, corporateItemCode } = selectedItem as IVendorComplain;
-      if (!gtin && !corporateItemCode) {
+      const { gtin, corporateItemCode, warningText, itemDescription, isProp65, isOnLabel, foodInd, isCloned: isClonedItem } = selectedItem as IVendorComplain;
+      if (isClonedItem) {
         addUpcDisabled = true;
+      } else {
+        if (!gtin && !corporateItemCode) {
+          addUpcDisabled = true;
+        } else {
+          if (!warningText || !itemDescription || isProp65 == null || isOnLabel == null || foodInd == null) {
+            addUpcDisabled = true;
+          }
+        }
       }
     }
     return (
-      <div>
-        <div className={styles.flexGrowOne}>
-          <Modal
-            titleAriaId="newItemModal"
-            subtitleAriaId="newItemModalSub"
-            isOpen={showNewItemModal}
-            onDismiss={this.closeNewItemModal}
-            isBlocking={false}
-            containerClassName="ms-modalExample-container"
-          >
-            <div className="ms-modalExample-header">
-              <span id="newItemModal">New Item</span>
-            </div>
-            <div id="newItemModalSub" className="ms-modalExample-body">
-              <form>
-                <TextField label="UPC Name" value={newItem!.upc!.upcpart1} onChanged={this.changeNewItemValue('upc.upcpart1')} />
-                <TextField value={newItem!.upc!.upcpart2} onChanged={this.changeNewItemValue('upc.upcpart2')} />
-                <TextField value={newItem!.upc!.upcpart3} onChanged={this.changeNewItemValue('upc.upcpart3')} />
-                <TextField value={newItem!.upc!.upcpart4} onChanged={this.changeNewItemValue('upc.upcpart4')} />
-                <TextField label="GTIN/Item Code" value={newItem.gtin} onChanged={this.changeNewItemValue('gtin')} />
-                <TextField label="Corporate Item Code" value={newItem.corporateItemCode} onChanged={this.changeNewItemValue('corporateItemCode')} />
-
-                <DefaultButton onClick={this.addItem} text="Ok" />
-                <DefaultButton onClick={this.closeNewItemModal} text="Cancel" />
-
-              </form>
-            </div>
-          </Modal>
+      <div className={[styles.dFlex, styles.dColumn, styles.flexGrowOne].join(' ')}>
+        <div className={[styles.dFlex, styles.flexGrowOne, styles.dColumn].join(' ')}>
           <Modal
             titleAriaId="itemModal"
             subtitleAriaId="itemModalSub"
@@ -692,32 +694,71 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
             </div>
             <div id="itemModalSub" className="ms-modalExample-body">
               <TextField label={label} disabled={isCloned ? true : (!isEditable)} value={modalData.value} multiline={true} onChanged={this.changeModalValue} />
+            </div>
+            <div className="ms-modalExample-footer">
               {modalButtons}
             </div>
           </Modal>
-          <TextField placeholder="Filter by name" onChanged={this.onFilterChange}></TextField>
-          <DetailsList
-            items={items}
-            columns={columns}
-            setKey="set"
-            layoutMode={DetailsListLayoutMode.justified}
-            selection={this._selection}
-            selectionPreservedOnEmptyClick={true}
-            selectionMode={SelectionMode.single}
-            compact={isCompactMode}
-            isHeaderVisible={true}
-            ariaLabelForSelectionColumn="Toggle selection"
-            ariaLabelForSelectAllCheckbox="Toggle selection for all items"
-            onItemInvoked={this._onItemInvoked}
-            onRenderItemColumn={this._onRenderColumn}
-          />
+          <div className={[styles.infoDiv, styles.marginBottom15, 'ms-borderColor-themeTertiary'].join(' ')}>
+            <div><InfoSolid /></div>
+            <div>Data governance to provide suitable text here</div>
+          </div>
+
+          {validationError.hasError ?
+            // <div className={styles.marginBottom15}>
+            //   {/* place for validation errors */}
+            //   <h4>{validationError.errors.length} validation error(s)</h4>
+            // </div> 
+            null
+            : null}
+
+          {/* <TextField placeholder="Filter by name" className={styles.marginBottom15} onChanged={this.onFilterChange}></TextField> */}
+          <div className={styles.vendorWarningBodyGrid}>
+            <DetailsList
+              componentRef={(ev) => this._root = ev}
+              items={items}
+              columns={columns}
+              setKey="set"
+              layoutMode={DetailsListLayoutMode.justified}
+              selection={this._selection}
+              selectionPreservedOnEmptyClick={true}
+              selectionMode={SelectionMode.single}
+              compact={isCompactMode}
+              isHeaderVisible={true}
+              ariaLabelForSelectionColumn="Toggle selection"
+              ariaLabelForSelectAllCheckbox="Toggle selection for all items"
+              // onItemInvoked={this._onItemInvoked}
+              onRenderItemColumn={this._onRenderColumn}
+              onRenderRow={this._onRenderRow}
+              className={styles.vendorGrid}
+            />
+          </div>
         </div>
         <div className={[styles.vendorWarningFooter, styles.minusMarginForFooterReset].join(' ')}>
 
           <div className={[styles.dFlex, styles.justifyContentBetween, styles.footerPaddingAround].join(' ')}>
             <div>
-              <DefaultButton onClick={this.openNewItemModal} primary={true} text="Add Another Item" />
-              <DefaultButton disabled={addUpcDisabled} onClick={this.addUPCByCloningItem} primary={true} text="Add UPC" />
+              {/* disabled={validationError ? validationError!.hasError || false : false} */}
+              <ActionButton
+                ariaLabel="Add Another Item"
+                iconProps={{ iconName: 'Add' }}
+                onClick={this.addItem}
+                className={styles.spaceRight}
+                primary={true}
+              >
+                Add Another Item
+        </ActionButton>
+              <ActionButton
+                ariaLabel="Add UPC"
+                iconProps={{ iconName: 'Copy' }}
+                onClick={this.addUPCByCloningItem}
+                primary={true}
+                disabled={addUpcDisabled}
+              >
+                Add UPC
+        </ActionButton>
+              {/* <DefaultButton onClick={this.addItem} primary={true} text="Add Another Item" />
+              <DefaultButton disabled={addUpcDisabled} onClick={this.addUPCByCloningItem} primary={true} text="Add UPC" /> */}
             </div>
             <div>
               <ActionButton
@@ -729,13 +770,30 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
                 Previous
               </ActionButton>
               <ActionButton
+                ariaLabel="submits the entire details"
+                iconProps={{ iconName: 'CheckMark' }}
+                onClick={this.submitDetails}
+                className={styles.spaceRight}
+              >
+                Submit
+              </ActionButton>
+              <ActionButton
+                ariaLabel="cancels the entire form"
+                iconProps={{ iconName: 'Cancel' }}
+                onClick={this.resetDetails}
+              >
+                Cancel
+              </ActionButton>
+              {/* <DefaultButton ariaLabel="submits the entire details" primary={true} onClick={this.submitDetails} text="Submit" />
+              <DefaultButton ariaLabel="cancels the entire form" primary={true} onClick={this.resetDetails} text="Cancel" /> */}
+              {/* <ActionButton
                 data-automation-id="Finish"
                 iconProps={{ iconName: 'ChromeBackMirrored' }}
                 onClick={this.nextClick}
                 className={styles.reverseDirection}
               >
                 Next
-              </ActionButton>
+              </ActionButton> */}
             </div>
           </div>
         </div>
@@ -753,84 +811,222 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         return null;
     }
   }
+  private _onRenderRow = (props: IDetailsRowProps): JSX.Element => {
+    const th = theme;
+    let { item } = props;
+    const { selectedItem } = this.state;
+    item = item as IVendorComplain;
+    if (item) {
+      if (!selectedItem) {
+        const { isCloned } = item;
+        if (isCloned) {
+          const exampleChildClass = mergeStyles({
+            backgroundColor: `${th.palette.themeLight} !important`
+          });
+          return <DetailsRow {...props} className={exampleChildClass} />;
+        }
+      } else {
+        if (JSON.stringify(item) != JSON.stringify(selectedItem)) {
+          const { isCloned } = item;
+          if (isCloned) {
+            const exampleChildClass = mergeStyles({
+              backgroundColor: `${th.palette.themeLight} !important`
+            });
+            return <DetailsRow {...props} className={exampleChildClass} />;
+          }
+        }
+      }
+    }
+    return <DetailsRow {...props} />;
+  }
   private _onRenderColumn = (item: IVendorComplain, index: number, column: IColumn) => {
     const self = this;
     let value = null;
     if (item && column) {
-      const { key, isEditable, isCloned, canBeEditable } = item;
+      const { key, isEditable, isCloned } = item;
+      const { validationError, selectedItem } = this.state;
+
+      let [vWarningText, vItemDescription, vProp65, vOnLabel, vFoodInd, vUPC, vGTIN, vItemCode] = [null, null, null, null, null, null, null, null];
+
+      if (selectedItem && item.key == selectedItem.key) {
+        const [vupc, vgtin, vitemcode] = [validationError.errors.filter(x => x.field == 'UPC'),
+        validationError.errors.filter(x => x.field == 'gtin'), validationError.errors.filter(x => x.field == 'corporateItemCode')];
+
+        if (!isCloned) {
+          if (vupc && vupc.length > 0) {
+            vUPC = vupc[0].errorMessage;
+          }
+          if (vgtin && vgtin.length > 0) {
+            vGTIN = vgtin[0].errorMessage;
+          }
+          if (vitemcode && vitemcode.length > 0) {
+            vItemCode = vitemcode[0].errorMessage;
+          }
+        } else {
+          if (vupc && vupc.length > 0) {
+            vUPC = vupc[0].errorMessage;
+          }
+        }
+
+        const vwarningtext = validationError.errors.filter(x => x.field == 'warningText');
+        if (vwarningtext && vwarningtext.length > 0) {
+          vWarningText = vwarningtext[0].errorMessage;
+        }
+        const vitemdescription = validationError.errors.filter(x => x.field == 'itemDescription');
+        if (vitemdescription && vitemdescription.length > 0) {
+          vItemDescription = vitemdescription[0].errorMessage;
+        }
+        const vprop65 = validationError.errors.filter(x => x.field == 'isProp65');
+        if (vprop65 && vprop65.length > 0) {
+          vProp65 = vprop65[0].errorMessage;
+        }
+        const vonlabel = validationError.errors.filter(x => x.field == 'isOnLabel');
+        if (vonlabel && vonlabel.length > 0) {
+          vOnLabel = vonlabel[0].errorMessage;
+        }
+        const vfoodind = validationError.errors.filter(x => x.field == 'foodInd');
+        if (vfoodind && vfoodind.length > 0) {
+          vFoodInd = vfoodind[0].errorMessage;
+        }
+      }
 
       if (column.fieldName) {
         value = item[column.fieldName];
         switch (column.fieldName) {
-          case 'isEditable':
-            return <Checkbox label="" checked={value} disabled={!canBeEditable}
-              onChange={self.toggleEditable(key)}></Checkbox>;
           case 'upcpart1':
-          case 'upcpart2':
-          case 'upcpart3':
-          case 'upcpart4':
-            // return <span>{item!['upc']![column.fieldName]}</span>;
             return <TextField disabled={!isEditable} value={item!['upc']![column.fieldName]}
               onChanged={this.upcChange(column.fieldName, key)}></TextField>;
+          case 'upcpart2':
+            return <TextField disabled={!isEditable} value={item!['upc']![column.fieldName]}
+              onChanged={this.upcChange(column.fieldName, key)}></TextField>;
+          case 'upcpart3':
+            return <TextField disabled={!isEditable} value={item!['upc']![column.fieldName]}
+              onChanged={this.upcChange(column.fieldName, key)}></TextField>;
+          case 'upcpart4':
+            return <TextField errorMessage={vUPC} disabled={!isEditable} value={item!['upc']![column.fieldName]}
+              onChanged={this.upcChange(column.fieldName, key)}></TextField>;
           case 'gtin':
+            return <TextField errorMessage={vGTIN} disabled={isCloned ? true : (!isEditable)} value={value}
+              onChanged={this.valuesChanged(column.fieldName, key)}></TextField>;
           case 'corporateItemCode':
-            return <TextField disabled={isCloned ? true : (!isEditable)} value={value}
+            return <TextField errorMessage={vItemCode} disabled={isCloned ? true : (!isEditable)} value={value}
               onChanged={this.valuesChanged(column.fieldName, key)}></TextField>;
           case 'warningText':
+            return <TextField multiline rows={4} errorMessage={vWarningText} readOnly={true} value={value} onClick={self.showModal(column.fieldName, key)}></TextField>;
           case 'itemDescription':
-            return <TextField readOnly={true} value={value} onClick={self.showModal(column.fieldName, key)}></TextField>;
+            return <TextField multiline rows={4} errorMessage={vItemDescription} readOnly={true} value={value} onClick={self.showModal(column.fieldName, key)}></TextField>;
           case 'isProp65':
-          case 'isOnLabel':
-          case 'foodInd':
             return <Dropdown
+              errorMessage={vProp65}
               label=""
               disabled={isCloned ? true : (!isEditable)}
               selectedKey={value}
               onChanged={this.onDropdownChange(column.fieldName, key)}
               placeHolder=""
               options={[
-                { key: 'Y', text: 'Yes' },
-                { key: 'N', text: 'No' },
+                { key: 'Y', text: 'Y' },
+                { key: 'N', text: 'N' },
+              ]}
+            />;
+          case 'isOnLabel':
+            return <Dropdown
+              errorMessage={vOnLabel}
+              label=""
+              disabled={isCloned ? true : (!isEditable)}
+              selectedKey={value}
+              onChanged={this.onDropdownChange(column.fieldName, key)}
+              placeHolder=""
+              options={[
+                { key: 'Y', text: 'Y' },
+                { key: 'N', text: 'N' },
+              ]}
+            />;
+          case 'foodInd':
+            return <Dropdown
+              errorMessage={vFoodInd}
+              label=""
+              disabled={isCloned ? true : (!isEditable)}
+              selectedKey={value}
+              onChanged={this.onDropdownChange(column.fieldName, key)}
+              placeHolder=""
+              options={[
+                { key: 'Y', text: 'Y' },
+                { key: 'N', text: 'N' },
               ]}
             />;
           case 'effFromDate':
             const firstDayOfWeek = DayOfWeek.Sunday;
             return <DatePicker
-              value={new Date(value)}
+              value={value!}
               disabled={isCloned ? true : (!isEditable)}
               firstDayOfWeek={firstDayOfWeek}
               strings={DayPickerStrings}
               placeholder="Select a date"
               ariaLabel="Select a date"
-              onAfterMenuDismiss={() => console.log('onAfterMenuDismiss called')}
+              allowTextInput={true}
               onSelectDate={self.onSelectDate(key)}
+              formatDate={this._onFormatDate}
+              parseDateFromString={this._onParseDateFromString(key)}
             ></DatePicker>;
           default:
             return <span>{value}</span>;
         }
       } else if (column.key == 'isDelete') {
         return <IconButton
-          iconProps={{ iconName: 'Delete' }} title="Delete" ariaLabel="Delete" onClick={self.deleteItem(key)}></IconButton>;
+          iconProps={{ iconName: 'BoxMultiplySolid' }} title="Delete" className={styles.redBg} ariaLabel="Delete" onClick={self.deleteItem(key)}></IconButton>;
       }
-      // else if (column.key == 'attachment') {
-      //   return <IconButton
-      //     iconProps={{ iconName: 'Attach' }} title="Attachment" ariaLabel="Attachment" onClick={self.openAttachmentModal(key)}></IconButton>;
-      // }
     }
   }
-  private _onItemInvoked = (item: any): void => {
-    const { items } = this.state;
-    const filter = items.filter(x => x.key == item.key);
-    if (filter && filter.length > 0) {
-      const { canBeEditable } = filter[0];
-      if (canBeEditable) {
-        filter[0].isEditable = !filter[0].isEditable;
-        this.setState({
-          items: items.slice()
+  private _onFormatDate = (date: Date): string => {
+    if (date) {
+      return date.getDate() + '/' + (date.getMonth() + 1) + '/' + (date.getFullYear() % 100);
+    } else {
+      return '';
+    }
+  }
+  private onSelectDate = (key: number) => (date: Date | null | undefined) => {
+    let { items, selectedItem } = this.state;
+    let selected: any = items.filter(x => x.key == key);
+    if (selected && selected.length > 0) {
+      selected = selected[0] as IVendorComplain;
+      selected.effFromDate = date;
+      if (selectedItem) {
+        selectedItem.effFromDate = date;
+      }
+      items = this.propagateChangeToClonedRow(key, date, 'effFromDate', items);
+      this.setState({
+        items: items.slice(),
+        selectedItem
+      });
+      const self = this;
+      setTimeout(() => {
+        self.validateSelectedItem();
+        setTimeout(() => {
+          self.setState({ items: self.state.items.slice() });
         });
-      }
+      });
     }
   }
+  private _onParseDateFromString = (key: number) => (value: string): Date => {
+    const { items } = this.state;
+    const selected = items.filter(x => x.key == key)[0];
+    const date = selected.effFromDate || new Date();
+    try {
+      const values = (value || '').trim().split('/');
+      const day = values.length > 0 ? Math.max(1, Math.min(31, parseInt(values[0], 10))) : date.getDate();
+      const month = values.length > 1 ? Math.max(1, Math.min(12, parseInt(values[1], 10))) - 1 : date.getMonth();
+      let year = values.length > 2 ? parseInt(values[2], 10) : date.getFullYear();
+      if (year < 100) {
+        year += date.getFullYear() - (date.getFullYear() % 100);
+      }
+      return new Date(year, month, day);
+    } catch (_) {
+      return null;
+    }
+  }
+  //#endregion
+
+  //#region DetailList helpers
   private _onColumnClick = (ev: React.MouseEvent<HTMLElement>, column: IColumn): void => {
     const { columns, items } = this.state;
     let newItems: IVendorComplain[] = items.slice();
@@ -877,7 +1073,50 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
       });
     }
   }
+  //#endregion
 
+  //#region Delete and rearrange
+  private rearrangeIndices = (items: IVendorComplain[]): IVendorComplain[] => {
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+      const { key: item_key } = item;
+      item.key = index;
+      if (!item.isCloned) {
+        const filter = items.filter(x => x.clonedFrom == item_key);
+        if (filter && filter.length > 0) {
+          filter.forEach((f) => {
+            f.clonedFrom = index;
+          });
+        }
+      }
+    }
+    return items;
+  }
+  private deleteItem = (key: number) => () => {
+    this.setState({
+      deleteKey: key
+    });
+    this.props._showConfirmDialog({ type: DialogType.normal, title: 'Delete', subText: 'This will delete the row and all its associated copied rows. Are you sure you want to continue?' }, this.deleteCallback);
+  }
+  private deleteCallback = () => {
+    const { deleteKey: key } = this.state;
+    let { items } = this.state;
+    items = items.filter((item) => item.key != key && item.clonedFrom != key) as IVendorComplain[];
+    items = this.rearrangeIndices(items);
+    items = this._sortItems(items, 'key');
+    this.setState({
+      items: items.slice(),
+      deleteKey: null
+    });
+    const self = this;
+    setTimeout(() => {
+      self._resetSelectedItem();
+      setTimeout(() => {
+        self.setSelectedRow({ index: null });
+      });
+    });
+  }
+  //#endregion
 }
 
 

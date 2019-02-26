@@ -3,7 +3,11 @@
 .albertsonVendorWarning {
   display:flex;
   flex-direction: column;
-  height:100vh;
+  // flex-grow:1;
+  height:100% !important;
+  .fullHeightModalItem {
+    height:100vh !important;
+  }
   .container {
     max-width: 700px;
     margin: 0px auto;
@@ -82,6 +86,21 @@
         flex-grow:1;
         overflow-y:auto;
         overflow-x:hidden;
+        display:flex;
+      }
+
+      .vendorWarningBodyInner {
+        max-height:100% !important;
+        height:100% !important;
+        overflow:auto;
+        display:flex;
+      }
+
+      .vendorWarningBodyGrid {
+        // flex-grow:1;
+        height:100%;
+        max-height:400px;
+        overflow:auto;
       }
 
       .vendorWarningFooter {
@@ -102,6 +121,13 @@
 
   .dColumn {
     flex-direction:column;
+  }
+
+  .redBg {
+    color: #ff0000;
+    margin-left:0px !important;
+    padding-left:0px !important;
+    min-width:32px !important;
   }
 
   .paddingAround {
@@ -139,7 +165,7 @@ border-style: solid;
   }
 
   .actionItems {
-    padding-right:8px;
+    padding-right:16px;
     padding-top: 5px;
   }
 
@@ -178,6 +204,8 @@ margin-right:10px;
 
   .vendorButton {
     display:inline-block;
+    width:32px !important;
+    min-width:32px !important;
   }
 
   .stepbuttonsRight {
@@ -187,6 +215,74 @@ margin-right:10px;
 
   .minusMarginForFooterReset {
     margin: 0px -8px -8px -8px;
+  }
+
+  .vendorGrid {
+    background-color:$ms-color-white;
+  }
+  .whiteOverlay {
+    position:absolute;
+    background-color: $ms-color-white;
+    opacity:0.4;
+    left:0;
+    right:0;
+    top:0;
+    bottom:0;
+    z-index:9999999;
+  }
+
+  .vendorPortalLink {
+    display:flex;
+    flex-direction:row;
+    background-color:$ms-color-neutralQuaternary;
+    padding:6px 8px;
+    & .linkText {
+      color: $ms-color-neutralDark;
+      font-size: 18px;
+      font-weight:bold;
+      flex-grow:1;
+      text-transform: uppercase;
+      padding-top:4px;
+      & span {
+        font-weight:normal;
+        font-size: 16px;
+        font-style:italic;
+      }
+    }
+    & button {
+      width:350px;
+      margin: -6px -12px -6px 0px;
+      height: 48px;
+    }
+  }
+
+  .infoDiv {
+    background-color:$ms-color-themeLight;
+    border-width: 1px;
+    border-style: solid;
+    padding:15px;
+    display:flex;
+    flex-direction:row;
+    color: $ms-color-neutralPrimary;
+    & i {
+      color: $ms-color-themeTertiary;
+      font-size:32px;
+      margin-right:10px;
+      vertical-align: middle;
+    }
+  }
+  .height30 {
+    height:30px; 
+  }
+  .vendorportalLinkIcon {
+    color: $ms-color-themeTertiary;
+      font-size:32px;
+      margin-right:10px;
+      vertical-align: middle;
+  }
+
+  .marginBottom15 {
+    margin-bottom:15px;
   }
 
   .button {
@@ -226,10 +322,11 @@ margin-right:10px;
 }
 
 :global {
-  .fullwidthModal {height:100vh !important; width:100vw !important;}
-  .ms-modalExample-container{width:50vw;display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-flow:column nowrap;flex-flow:column nowrap;-webkit-box-align:stretch;-ms-flex-align:stretch;align-items:stretch}
+  .fullwidthModal {height:100vh !important; width:100vw !important; height:100% !important;}
+  .ms-modalExample-container{width:50vw; height:50vh; display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-flow:column nowrap;flex-flow:column nowrap;-webkit-box-align:stretch;-ms-flex-align:stretch;align-items:stretch}
   .ms-modalExample-container .ms-modalExample-header{background:#0078d4;color:#fff;display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:28px;font-weight:100;font-weight:600;padding:0 28px;min-height:40px}
-  .ms-modalExample-container .ms-modalExample-body{-webkit-box-flex:4;-ms-flex:4 4 auto;flex:4 4 auto;padding:5px 28px;overflow-y:auto}
+  .ms-modalExample-container .ms-modalExample-body{-webkit-box-flex:4;-ms-flex:4 4 auto;flex:4 4 auto;/*display:-ms-flexbox;display:flex; flex-grow:1;*/ flex-direction:row; padding:5px 28px;overflow-y:auto}
+  .ms-modalExample-container .ms-modalExample-footer {background:#f7f7f7;display:-ms-flexbox;display:flex; padding:5px 28px; flex-direction: row-reverse; }
   button[class*="vendorButton_"] i {
     width:32px;
     height:32px;
@@ -240,5 +337,84 @@ margin-right:10px;
   button[class*="reverseDirection_"], button[class*="reverseDirection_"] i {
     color:#fff !important;
     font-weight:500 !important;
+  }
+
+  div[class*="vendorGrid_"] div[class*="cell_"] {
+    padding: 11px 4px !important;
+  }
+
+  div[class*="vendorGrid_"] div[class*="cell_"][class*="checkCell_"] {
+    padding: 0 !important;
+    padding-top: 1px !important;
+  }
+
+  div[class*="vendorGrid_"]  div[class*="owner_"][class*="isSelected_"]  div[class*="check_"] {
+    padding-top:13px !important;
+  }
+
+  div[class*="albertsonVendorWarning_"] .ms-Button--action .ms-Button-flexContainer {
+    color:$ms-color-white !important;
+    background-color: $ms-color-themePrimary !important; 
+    font-weight:500;
+    padding:0px 10px;
+     & i {
+      color:$ms-color-white !important;
+      font-weight:500;
+     }
+  }
+
+  div[class*="albertsonVendorWarning_"] .ms-Button--action:hover {
+    background:transparent !important;
+    border-color: transparent !important;
+  }
+
+  div[class*="albertsonVendorWarning_"] .ms-Button--action.is-disabled .ms-Button-flexContainer {
+    color:$ms-color-neutralTertiary !important;
+    background-color: $ms-color-neutralLight !important; 
+    & i {
+      color:$ms-color-neutralTertiary !important;
+     }
+  }
+  div[class*="vendorGrid_"] .ms-DetailsHeader-cell {
+    background-color: $ms-color-themePrimary !important; 
+    color:$ms-color-white !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+  }
+
+  div[class*="vendorGrid_"] div[class*="ms-DetailsHeader-cell"][class*="cell_"] {
+    padding: 24px 0px !important;
+    white-space: normal !important;
+  } 
+  div[class*="vendorGrid_"] div[class*="ms-DetailsHeader-cell"][class*="cell_"] input[class*="field_"], div[class*="vendorGrid_"] div[class*="ms-DetailsRow-cell"][class*="cell_"] input[class*="field_"] {
+    padding: 0px 3px 0px 3px !important;
+  }
+  div[class*="vendorGrid_"] div[class*="ms-DetailsHeader-cell"][class*="cell_"] span[class*="cellTitle_"] {
+    height:100% !important;
+    align-items: center !important;
+
+  }
+  div[class*="vendorGrid_"] .ms-DetailsHeader {
+    height:48px !important;
+    line-height: 18px !important;
+    background-color: $ms-color-themePrimary !important; 
+  }
+
+  div[class*="vendorPortalLink_"] .ms-Button--action .ms-Button-flexContainer {
+    flex-direction:row-reverse !important;
+  }
+  
+  .smallwidthModal {height:30vh !important; width:30vw !important;}
+div[class*="albertsonVendorWarning_"] .ms-Spinner-circle {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    top: 50%;
+    left: 50%;
+    margin-left: -25px;
+    margin-top: -25px;
+  }
+  .fullHeightModalItem {
+    height:100vh !important;
   }
 }

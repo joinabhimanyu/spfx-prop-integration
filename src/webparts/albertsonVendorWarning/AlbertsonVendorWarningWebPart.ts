@@ -8,8 +8,10 @@ import {
 } from '@microsoft/sp-webpart-base';
 
 import * as strings from 'AlbertsonVendorWarningWebPartStrings';
-import AlbertsonContactInfo from './components/AlbertsonContactInfo';
 import { IAlbertsonVendorWarningProps } from './components/IAlbertsonVendorWarningProps';
+import { initializeIcons } from '@uifabric/icons';
+import AlbertsonLandingPage from './components/AlbertsonLandingPage';
+initializeIcons();
 
 export interface IAlbertsonVendorWarningWebPartProps {
   description: string;
@@ -19,9 +21,10 @@ export default class AlbertsonVendorWarningWebPart extends BaseClientSideWebPart
 
   public render(): void {
     const element: React.ReactElement<IAlbertsonVendorWarningProps> = React.createElement(
-      AlbertsonContactInfo,
+      AlbertsonLandingPage,
       {
-        description: this.properties.description
+        description: this.properties.description,
+        context: this.context
       }
     );
 

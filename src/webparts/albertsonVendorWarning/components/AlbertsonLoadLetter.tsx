@@ -7,6 +7,7 @@ import { DefaultButton } from 'office-ui-fabric-react/lib/components/Button';
 import styles from './AlbertsonVendorWarning.module.scss';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import Dialog, { DialogType } from 'office-ui-fabric-react/lib/Dialog';
+import { sendMail } from '../utils/commonUtility';
 
 export interface IAttachmentState {
   columns: IColumn[];
@@ -67,14 +68,14 @@ export default class AlbertsonLoadLetter extends React.Component<IAttachmentProp
       return v.toString(16);
     });
   }
-  private sendMail = (): Promise<any> => {
+  private getSharedDocumentsUrl = (): Promise<any> => {
     return new Promise((resolve, reject) => {
       pnp.sp.web.getFolderByServerRelativeUrl("Shared Documents").get().then(async (resp) => {
         const p1 = await pnp.sp.site.get();
-        const parent1 = p1.Url.split("/sites")[0];
+        const parent = p1.Url.split("/sites")[0];
         const url = resp.ServerRelativeUrl;
         setTimeout(() => {
-          resolve({ error: null });
+          resolve({ parent: parent, relativeUrl: url, error: null });
         }, 10);
       });
     });
@@ -100,8 +101,7 @@ export default class AlbertsonLoadLetter extends React.Component<IAttachmentProp
         serverRelativeUrl = item.ServerRelativeUrl || '';
         return uploadedItem.update(payload);
       })
-      .then(_ => this.sendMail())
-      .then(r => !r.error ? ({ serverRelativeUrl: serverRelativeUrl, error: null }) : ({ serverRelativeUrl: null, error: r.error }))
+      .then(_ => ({ serverRelativeUrl: serverRelativeUrl, error: null }))
       .catch(error => ({ serverRelativeUrl: null, error: error }));
   }
   private loadLetter = async () => {
@@ -112,41 +112,47 @@ export default class AlbertsonLoadLetter extends React.Component<IAttachmentProp
       this.props._toggleSpinner();
       const result = await this.uploadLetter(file, dateTime);
       if (!result.error) {
-        let maxKey = 0;
-        if (files.length > 0) {
-          files.map((f) => {
-            if (f.key > maxKey) {
-              maxKey = f.key;
-            }
+        const s = await this.getSharedDocumentsUrl();
+        const absoluteUrl = `${s.parent}${result.serverRelativeUrl}`;
+        const mailr = await sendMail("File upload",
+          `The file Name: ${file.name} has been uploaded at Time: ${dateTime} at Location:${absoluteUrl} by User: ${this.props.userid}`);
+        if (mailr) {
+          let maxKey = 0;
+          if (files.length > 0) {
+            files.map((f) => {
+              if (f.key > maxKey) {
+                maxKey = f.key;
+              }
+            });
+            maxKey += 1;
+          }
+          if (filter.length == 0) {
+            files.push({
+              key: maxKey,
+              name: file.name,
+              uploadTimeStamp: dateTime,
+              serverRelativeUrl: result.serverRelativeUrl
+            });
+          } else {
+            filter[0].name = file.name;
+            filter[0].uploadTimeStamp = dateTime;
+            filter[0].serverRelativeUrl = result.serverRelativeUrl;
+          }
+          this._fileRef.reset();
+          this.setState({
+            files,
+            file: null,
+            showDetailList: false
           });
-          maxKey += 1;
+          const self = this;
+          setTimeout(() => {
+            self.setState({
+              showDetailList: true
+            });
+            this.props._toggleSpinner();
+            this.props._showAlertDialog({ type: DialogType.normal, title: 'Upload letter', subText: 'File uploaded successfully' });
+          });
         }
-        if (filter.length == 0) {
-          files.push({
-            key: maxKey,
-            name: file.name,
-            uploadTimeStamp: dateTime,
-            serverRelativeUrl: result.serverRelativeUrl
-          });
-        } else {
-          filter[0].name = file.name;
-          filter[0].uploadTimeStamp = dateTime;
-          filter[0].serverRelativeUrl = result.serverRelativeUrl;
-        }
-        this._fileRef.reset();
-        this.setState({
-          files,
-          file: null,
-          showDetailList: false
-        });
-        const self = this;
-        setTimeout(() => {
-          self.setState({
-            showDetailList: true
-          });
-          this.props._toggleSpinner();
-          this.props._showAlertDialog({ type: DialogType.normal, title: 'Upload letter', subText: 'File uploaded successfully' });
-        });
       } else {
         this.props._toggleSpinner();
         this.props._showAlertDialog({ type: DialogType.normal, title: 'Error', subText: result.error });

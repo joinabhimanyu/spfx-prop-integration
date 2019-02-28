@@ -6,7 +6,6 @@ import Modal from 'office-ui-fabric-react/lib/Modal';
 import AlbertsonContactInfo from './AlbertsonContactInfo';
 import { Dialog, DialogType, DialogFooter } from 'office-ui-fabric-react/lib/Dialog';
 import { PrimaryButton, DefaultButton } from 'office-ui-fabric-react/lib/Button';
-
 const SecurityGroup = () => (
   <Icon iconName="SecurityGroup" className={styles.vendorportalLinkIcon} />
 );
@@ -84,7 +83,7 @@ export default class AlbertsonLandingPage extends React.Component<any, LandingPa
             Proposition 65 Vendor portal: <span>contact &amp; Vendor</span>
           </div>
           <div>
-            <ActionButton onClick={this.toggleMainModal} iconProps={{ iconName: 'NavigateBackMirrored' }} >CLICK HERE TO ADD ITEMS OR LOAD LETTER</ActionButton>
+            <ActionButton className='toggleMainModal' onClick={this.toggleMainModal} iconProps={{ iconName: 'NavigateBackMirrored' }} >CLICK HERE TO ADD ITEMS OR LOAD LETTER</ActionButton>
           </div>
         </div>
         <Modal

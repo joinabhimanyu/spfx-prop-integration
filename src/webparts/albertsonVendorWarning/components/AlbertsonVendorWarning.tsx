@@ -14,6 +14,7 @@ import { _columns, DayPickerStrings, _errColumns, IValidationBlob, _itemsValidat
 import { getTheme, mergeStyles } from 'office-ui-fabric-react/lib/Styling';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import Dialog, { DialogType } from 'office-ui-fabric-react/lib/Dialog';
+import { _onFormatDate } from '../utils/commonUtility';
 
 const InfoSolid = () => (
   <Icon iconName="InfoSolid" className="ms-IconExample" />
@@ -965,7 +966,7 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
               ariaLabel="Select a date"
               allowTextInput={true}
               onSelectDate={self.onSelectDate(key)}
-              formatDate={this._onFormatDate}
+              formatDate={_onFormatDate}
               parseDateFromString={this._onParseDateFromString(key)}
             ></DatePicker>;
           default:
@@ -975,13 +976,6 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
         return <IconButton
           iconProps={{ iconName: 'BoxMultiplySolid' }} title="Delete" className={styles.redBg} ariaLabel="Delete" onClick={self.deleteItem(key)}></IconButton>;
       }
-    }
-  }
-  private _onFormatDate = (date: Date): string => {
-    if (date) {
-      return date.getDate() + '/' + (date.getMonth() + 1) + '/' + (date.getFullYear() % 100);
-    } else {
-      return '';
     }
   }
   private onSelectDate = (key: number) => (date: Date | null | undefined) => {
@@ -1013,8 +1007,9 @@ export default class AlbertsonVendorWarning extends React.Component<any, IVendor
     const date = selected.effFromDate || new Date();
     try {
       const values = (value || '').trim().split('/');
-      const day = values.length > 0 ? Math.max(1, Math.min(31, parseInt(values[0], 10))) : date.getDate();
-      const month = values.length > 1 ? Math.max(1, Math.min(12, parseInt(values[1], 10))) - 1 : date.getMonth();
+
+      const month = values.length > 0 ? Math.max(1, Math.min(12, parseInt(values[0], 10))) - 1 : date.getMonth();
+      const day = values.length > 1 ? Math.max(1, Math.min(31, parseInt(values[1], 10))) : date.getDate();
       let year = values.length > 2 ? parseInt(values[2], 10) : date.getFullYear();
       if (year < 100) {
         year += date.getFullYear() - (date.getFullYear() % 100);

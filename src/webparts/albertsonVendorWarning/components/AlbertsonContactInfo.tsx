@@ -1,7 +1,7 @@
 import * as React from 'react';
 import AsyncSelect from 'react-select/lib/Async';
 import { Spinner, SpinnerSize } from 'office-ui-fabric-react/lib/Spinner';
-import pnp, { sp, Web, ItemAddResult } from 'sp-pnp-js';
+import pnp, { sp, Web, ItemAddResult, EmailProperties } from 'sp-pnp-js';
 import {
   IVendorComplain, IContactInfo, IVendorInfo, Step, IValidationError, UserGroup, IContactModalData, IAttachment,
   IUserManager, UserRole, ISite, VendorOptions, IUPC
@@ -20,7 +20,10 @@ import { _contactInfoValidationBlob, _venderInfoValidationBlob, IValidationBlob 
 import InputMask from 'react-input-mask';
 import { Icon } from 'office-ui-fabric-react/lib/Icon';
 import { DialogType } from 'office-ui-fabric-react/lib/Dialog';
-
+import * as appSettings from 'appSettings';
+import { sendMail, _onFormatDate, logError } from '../utils/commonUtility';
+import { Logger, ConsoleListener, LogLevel, FunctionListener, LogEntry, LogListener } from "sp-pnp-js/lib/utils/logging";
+import LoggingService, { ILogItem, ILogData } from '../utils/LoggingService';
 
 export interface IVendorState {
   contactInfo: IContactInfo;
@@ -28,7 +31,6 @@ export interface IVendorState {
   complaintInfo: IVendorComplain[];
   files?: IAttachment[];
   currentStep: Step;
-  contactUsInfo: IContactModalData;
   contactModalData: IContactModalData;
   showContactModal: boolean;
   showHelpModal: boolean;
@@ -46,7 +48,6 @@ const initialState: IVendorState = {
   complaintInfo: [],
   files: [],
   currentStep: Step.step1,
-  contactUsInfo: {},
   contactModalData: {},
   showContactModal: false,
   showHelpModal: false,
@@ -296,7 +297,7 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
     });
   }
   private fetchItems = () => {
-    return pnp.sp.web.lists.getByTitle("Prop65Items").items.select("UpcOne", "UpcTwo", "UpcThree", "UpcFour", "Gtin", "ItemCode"
+    return pnp.sp.web.lists.getByTitle(appSettings.vendorItemsListName).items.select("UpcOne", "UpcTwo", "UpcThree", "UpcFour", "Gtin", "ItemCode"
       , "WarningText", "ItemDescription", "Prop65", "OnLabel", "FoodInd", "EffFromDate").get().then(resp => {
         const items = resp.map((item, index) => ({
           key: index,
@@ -317,7 +318,7 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
       });
   }
   private fetchVendorInformation = () => {
-    return pnp.sp.web.lists.getByTitle('Prop65VendorInfo').items.select("FirstName", "LastName", "Email", "Phone"
+    return pnp.sp.web.lists.getByTitle(appSettings.vendorInfoListName).items.select("FirstName", "LastName", "Email", "Phone"
       , "Employer", "VendorNumber", "VendorName").get().then(resp => {
         const items = resp.map(item => ({
           firstname: item.FirstName,
@@ -380,9 +381,15 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
     const url = this.props!.context!.pageContext!.site!.absoluteUrl || '';
     const web = new Web(url);
     this._web = web;
+    Logger.activeLogLevel = LogLevel.Verbose;
+    const user = await this.fetchUserDetails();
+    let advancedLogging = new LoggingService(appSettings.applicationName, user.Id);
+    Logger.subscribe(advancedLogging);
+    Logger.subscribe(new ConsoleListener());
     const result: IValidationError = this.validateOnNext();
     this.setState({
       validationError: result,
+      user: user
     });
   }
   private setItems = (items): void => {
@@ -400,13 +407,8 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
     }
   }
   private onContactClick = (event: any) => {
-    let { contactModalData, contactUsInfo } = this.state;
-    const { subject, body } = contactUsInfo;
+    let { contactModalData } = this.state;
     contactModalData = {};
-    if (subject && body) {
-      contactModalData.subject = subject;
-      contactModalData.body = body;
-    }
     this.setState({
       contactModalData: contactModalData,
       showContactModal: true
@@ -427,7 +429,7 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
       showHelpModal: false
     });
   }
-  private saveContactModalData = () => {
+  private saveContactModalData = async () => {
     const result = { validationMessege: '', hasError: false };
     const { contactModalData } = this.state;
     if (!contactModalData.subject || !contactModalData.body) {
@@ -437,13 +439,14 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
     if (result.hasError) {
       this.props._showAlertDialog({ type: DialogType.normal, title: 'Validation', subText: result.validationMessege });
     } else {
-      this.setState({
-        contactUsInfo: {
-          subject: contactModalData.subject,
-          body: contactModalData.body
-        },
-        showContactModal: false
-      });
+      const { subject, body } = contactModalData;
+      const mailr = await sendMail(subject, body);
+      if (mailr) {
+        this.setState({
+          showContactModal: false
+        });
+        this.props._showAlertDialog({ type: DialogType.normal, title: 'Mail', subText: 'Mail sent successfully' });
+      }
     }
   }
   private changeStep = (step): void => {
@@ -601,16 +604,25 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
     this.props._showConfirmDialog({ type: DialogType.normal, title: 'Save', subText: 'Do you want to save the details?' }, this.submitCallback);
   }
   private submitCallback = () => {
-    const { contactInfo, vendInfo, complaintInfo } = this.state;
-    this._toggleSpinner();
-    this.submitVendorInformation(contactInfo, vendInfo).then(_ => {
-      return this.submitItems(complaintInfo);
-    }).then(_ => {
-      this.props._showAlertDialog({ type: DialogType.normal, title: 'Save', subText: 'Data saved successfully' });
+    try {
+      const { contactInfo, vendInfo, complaintInfo } = this.state;
       this._toggleSpinner();
-      this.props.toggleMainModal();
-    });
+      this.submitVendorInformation(contactInfo, vendInfo).then(_ => {
+        return this.submitItems(complaintInfo);
+      }).then(_ => {
+        this.props._showAlertDialog({ type: DialogType.normal, title: 'Save', subText: 'Data saved successfully' });
+        this._toggleSpinner();
+        this.props.toggleMainModal();
+      }).catch((error) => {
+        logError(error, LogLevel.Error, "submitDetails");
+        this._toggleSpinner();
+      });
+    } catch (error) {
+      logError(error, LogLevel.Error, "submitDetails");
+      this._toggleSpinner();
+    }
   }
+
   private generateGUID = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
       var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -627,34 +639,35 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
       VendorNumber: vendInfo.vendNum,
       VendorName: vendInfo.vendName
     };
-    return pnp.sp.web.lists.getByTitle("Prop65VendorInfo").items.add({ ...data, Title: this.generateGUID() })
+    return pnp.sp.web.lists.getByTitle(appSettings.vendorInfoListName).items.add({ ...data, Title: this.generateGUID() })
       .then((iam: ItemAddResult) => iam);
   }
   private submitItems = (complaintInfo: IVendorComplain[]) => {
-    const data = complaintInfo.map(item => ({
-      UpcOne: item.upc.upcpart1,
-      UpcTwo: item.upc.upcpart2,
-      UpcThree: item.upc.upcpart3,
-      UpcFour: item.upc.upcpart4,
-      Gtin: item.gtin,
-      ItemCode: item.corporateItemCode,
-      WarningText: item.warningText,
-      ItemDescription: item.itemDescription,
-      Prop65: item.isProp65 == 'Y' ? true : false,
-      OnLabel: item.isOnLabel == 'Y' ? true : false,
-      FoodInd: item.foodInd == 'Y' ? true : false,
-      EffFromDate: item.effFromDate ? this._onFormatDate(item.effFromDate) : null
-    }));
-    const list = pnp.sp.web.lists.getByTitle('Prop65Items');
-    list.getListItemEntityTypeFullName().then(entityTypeFullName => {
-      // const batch = pnp.sp.web.createBatch();
-      const prs = data.map(item => list.items.add({ ...item, Title: this.generateGUID() }, entityTypeFullName));
-      Promise.all(prs).then(_ => Promise.resolve());
-      // batch.execute().then(_ => Promise.resolve());
+    return new Promise((resolve, reject) => {
+      const data = complaintInfo.map(item => ({
+        UpcOne: item.upc.upcpart1,
+        UpcTwo: item.upc.upcpart2,
+        UpcThree: item.upc.upcpart3,
+        UpcFour: item.upc.upcpart4,
+        Gtin: item.gtin,
+        ItemCode: item.corporateItemCode,
+        WarningText: item.warningText,
+        ItemDescription: item.itemDescription,
+        Prop65: item.isProp65 == 'Y' ? true : false,
+        OnLabel: item.isOnLabel == 'Y' ? true : false,
+        FoodInd: item.foodInd == 'Y' ? true : false,
+        EffFromDate: item.effFromDate ? _onFormatDate(item.effFromDate) : null
+      }));
+      const list = pnp.sp.web.lists.getByTitle(appSettings.vendorItemsListName);
+      list.getListItemEntityTypeFullName()
+        .then(entityTypeFullName => {
+          // const batch = pnp.sp.web.createBatch();
+          const prs = data.map(item => list.items.add({ ...item, Title: this.generateGUID() }, entityTypeFullName));
+          Promise.all(prs)
+            .then(() => { resolve(); })
+            .catch((err) => { reject(err); });
+        }).catch((err) => { reject(err); });
     });
-  }
-  private _onFormatDate = (date: Date): string => {
-    return date.getDate() + '/' + (date.getMonth() + 1) + '/' + (date.getFullYear() % 100);
   }
   private previousClick = () => {
     this.changeStep(Step.step2);
@@ -863,7 +876,7 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
                 _showConfirmDialog={this.props._showConfirmDialog}></AlbertsonVendorWarning>
             ) : (
                 this._nextNavigationSource == 'loadLetter' ? (
-                  <AlbertsonLoadLetter userid={'0'}
+                  <AlbertsonLoadLetter userid={user.Email}
                     name={`${contactInfo.firstname} ${contactInfo.lastname}`}
                     email={contactInfo.email}
                     phone={contactInfo.phone}
@@ -928,6 +941,7 @@ export default class AlbertsonContactInfo extends React.Component<any, IVendorSt
         </div>;
       }
     }
+    Logger.write(`Initialized ${appSettings.applicationName}: ${this.props.context.pageContext.web.absoluteUrl}`, LogLevel.Info);
     return (
 
       <div className={styles.albertsonVendorWarning}>

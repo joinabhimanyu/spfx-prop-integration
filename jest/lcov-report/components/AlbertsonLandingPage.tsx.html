@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for components/AlbertsonLandingPage.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="..\prettify.css" />
+    <link rel="stylesheet" href="..\base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(..\sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="..\index.html">All files</a> / <a href="index.html">components</a> AlbertsonLandingPage.tsx
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">76.92% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>40/52</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">52.94% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>9/17</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">46.67% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>7/15</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">79.55% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>35/44</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as React from 'react';
+import { Icon } from 'office-ui-fabric-react/lib/Icon';
+import styles from './AlbertsonVendorWarning.module.scss';
+import { <span class="branch-1 cbranch-no" title="branch not covered" >ActionButton } from 'office-ui-fabr</span>ic-<span class="fstat-no" title="function not covered" ><span class="branch-2 cbranch-no" title="branch not covered" >re</span>act/lib/Button';<span class="cstat-no" title="statement not covered" ></span></span>
+import M<span class="fstat-no" title="function not covered" ><span class="branch-3 cbranch-no" title="branch not covered" >od</span>al from 'office-<span class="cstat-no" title="statement not covered" >ui-fabric-react/l<span class="cstat-no" title="statement not covered" >ib/Modal';<span class="cstat-no" title="statement not covered" ></span></span></span></span>
+import AlbertsonContactInfo from './AlbertsonContactInfo';
+import { Dialog, DialogType, DialogFooter } from 'office-ui-fabric-react/lib/Dialog';
+import { PrimaryButton, DefaultButton } from 'office-ui-fabric-react/lib/Button';
+<span class="branch-0 cbranch-no" title="branch not covered" ></span>
+const SecurityGroup = () =&gt; (
+  &lt;Icon iconName="SecurityGroup" className={styles.vendorportalLinkIcon} /&gt;
+);
+&nbsp;
+export type DialogContentProps = {
+  type: DialogType,
+  title?: string;
+  subText?: string;
+};
+&nbsp;
+export type LandingPageState = {
+  showMainModal: boo<span class="fstat-no" title="function not covered" >le</span>an;<span class="cstat-no" title="statement not covered" ></span>
+  showAlertDialog: boolean;
+  showConfirmDialog: boolean;
+  alertDialogContentProps?: DialogContentProps;
+  confirmDialogContentProps?: DialogContentProps;
+  onConfirmClick?: Function;
+};
+&nbsp;
+export default class AlbertsonLandingPage extends React.Component&lt;any, LandingPageState&gt;{
+  constructor(props) {
+    super(props);
+    this.state = {<span class="fstat-no" title="function not covered" ></span>
+      showMa<span class="cstat-no" title="statement not covered" >inModal: false,</span>
+      showAlertDialog: false,
+      showConfirmDialog: false
+    };
+  }
+  private toggleMainModal = () =&gt; {<span class="fstat-no" title="function not covered" ></span>
+    const { <span class="cstat-no" title="statement not covered" >showMainModal } = this.state;</span>
+    this.setState({
+      showMainModal: !showMainModal
+    });
+  }
+  private _showAlertDialog = (_contentProps: DialogContentProps) =&gt; {
+    this.setState({<span class="fstat-no" title="function not covered" ></span>
+      showAl<span class="cstat-no" title="statement not covered" >ertDialog: true,</span>
+      alertDialogContentProps: _contentProps
+    });
+  }
+  private _showConfirmDialog = (_contentProps: DialogContentProps, callback: Function) =&gt; {
+    this.setState({<span class="fstat-no" title="function not covered" ></span>
+      showCo<span class="cstat-no" title="statement not covered" >nfirmDialog: true,</span>
+      confirmDialogContentProps: _contentProps,
+      onConfirmClick: callback
+    });
+  }
+  private _closeAlertDialog = () =&gt; {
+    this.setState({<span class="fstat-no" title="function not covered" ></span>
+      showAl<span class="cstat-no" title="statement not covered" >ertDialog: false,</span>
+      alertDialo<span class="cstat-no" title="statement not covered" >gContentProps: null</span>
+    });
+  }<span class="cstat-no" title="statement not covered" ></span>
+  private _cancelConfirmDialog = () =&gt; {
+    this.setState({
+      showConfirmDialog: false,
+      confirmDialogContentProps: null,
+      onConfirmClick: null
+    });
+  }
+  private _acceptConfirmDialog = () =&gt; {
+    if (this.state.onConfirmClick) {
+      this.state.onConfirmClick();
+    }
+    this._cancelConfirmDialog();
+  }
+  public render() {
+    const { context } = this.props;
+    const { showMainModal, showAlertDialog, showConfirmDialog, alertDialogContentProps, confirmDialogContentProps } = this.state;
+    return (
+      &lt;div className={styles.albertsonVendorWarning}&gt;
+        &lt;div className={styles.vendorPortalLink}&gt;
+          &lt;SecurityGroup /&gt;
+          &lt;div className={styles.linkText}&gt;
+            Proposition 65 Vendor portal: &lt;span&gt;contact &amp;amp; Vendor&lt;/span&gt;
+          &lt;/div&gt;
+          &lt;div&gt;
+            &lt;ActionButton className='toggleMainModal' onClick={this.toggleMainModal} iconProps={{ iconName: 'NavigateBackMirrored' }} &gt;CLICK HERE TO ADD ITEMS OR LOAD LETTER&lt;/ActionButton&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+        &lt;Modal
+          isOpen={showMainModal}
+          onDismiss={this.toggleMainModal}
+          isBlocking={false}
+          containerClassName="ms-modalExample-container fullwidthModal"
+        &gt;
+          {showMainModal ? &lt;AlbertsonContactInfo
+            context={context}
+            toggleMainModal={this.toggleMainModal}
+            _showAlertDialog={this._showAlertDialog}
+            _showConfirmDialog={this._showConfirmDialog}&gt;&lt;/AlbertsonContactInfo&gt; : null}
+        &lt;/Modal&gt;
+        &lt;Dialog
+          hidden={!showAlertDialog}
+          onDismiss={this._closeAlertDialog}
+          dialogContentProps={alertDialogContentProps}
+          modalProps={{
+            isBlocking: true,
+            containerClassName: 'ms-dialogMainOverride'
+          }}
+        &gt;
+          &lt;DialogFooter&gt;
+            &lt;DefaultButton onClick={this._closeAlertDialog} text="Ok" /&gt;
+          &lt;/DialogFooter&gt;
+        &lt;/Dialog&gt;
+&nbsp;
+        &lt;Dialog
+          hidden={!showConfirmDialog}
+          onDismiss={this._cancelConfirmDialog}
+          dialogContentProps={confirmDialogContentProps}
+          modalProps={{
+            isBlocking: true,
+            containerClassName: 'ms-dialogMainOverride'
+          }}
+        &gt;
+          &lt;DialogFooter&gt;
+            &lt;PrimaryButton onClick={this._acceptConfirmDialog} text="Ok" /&gt;
+            &lt;DefaultButton onClick={this._cancelConfirmDialog} text="Cancel" /&gt;
+          &lt;/DialogFooter&gt;
+        &lt;/Dialog&gt;
+      &lt;/div&gt;
+    );
+  }
+}</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="https://istanbul.js.org/" target="_blank">istanbul</a> at Wed Feb 27 2019 17:21:56 GMT+0530 (India Standard Time)
+</div>
+</div>
+<script src="..\prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="..\sorter.js"></script>
+</body>
+</html>

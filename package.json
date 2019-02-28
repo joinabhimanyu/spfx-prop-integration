@@ -9,15 +9,50 @@
     "tsc": "./node_modules/.bin/tsc",
     "gulp": "./node_modules/.bin/gulp",
     "gulp_build": "./node_modules/.bin/gulp build",
-    "bundle": "./node_modules/.bin/gulp bundle",
-    "package": "./node_modules/.bin/gulp package",
-    "clean": "./node_modules/.bin/gulp clean",
+    "gulp_bundle": "./node_modules/.bin/gulp bundle",
+    "gulp_package": "./node_modules/.bin/gulp package",
+    "gulp_clean": "./node_modules/.bin/gulp clean",
     "gulp_test": "./node_modules/.bin/gulp test",
-    "serve": "./node_modules/.bin/gulp serve",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "gulp_serve": "./node_modules/.bin/gulp serve",
+    "test": "jest"
+  },
+  "jest": {
+    "setupFiles": [
+      "raf/polyfill"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(ts?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "json"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|scss)$": "identity-obj-proxy",
+      "^resx-strings/en-us.json": "<rootDir>/node_modules/@microsoft/sp-core-library/lib/resx-strings/en-us.json"
+    },
+    "collectCoverage": true,
+    "coverageReporters": [
+      "json",
+      "lcov",
+      "text",
+      "cobertura"
+    ],
+    "coverageDirectory": "<rootDir>/jest",
+    "reporters": [
+      "default"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    }
   },
   "dependencies": {
     "@microsoft/sp-core-library": "1.5.1",
@@ -30,12 +65,10 @@
     "@types/react-dom": "15.5.6",
     "@types/webpack-env": "1.13.1",
     "@uifabric/utilities": "6.0.1",
-    "enzyme": "^3.0.0",
-    "enzyme-adapter-react-15": "^1.3.0",
+    "raf": "^3.4.1",
     "react": "15.6.2",
     "react-dom": "15.6.2",
     "react-input-mask": "^2.0.4",
-    "react-scripts": "^1.0.14",
     "react-select": "^2.3.0",
     "sp-pnp-js": "^3.0.10"
   },
@@ -46,10 +79,19 @@
     "@microsoft/sp-build-web": "1.5.1",
     "@microsoft/sp-module-interfaces": "1.5.1",
     "@microsoft/sp-webpart-workbench": "1.5.1",
-    "gulp": "~3.9.1",
-    "@types/chai": "3.4.34",
-    "@types/mocha": "2.2.38",
+    "@types/chai": ">=3.4.34 <3.6.0",
+    "@types/enzyme": "3.1.10",
+    "@types/enzyme-adapter-react-15": "1.0.2",
+    "@types/jest": "23.0.0",
+    "@types/mocha": ">=2.2.33 <2.6.0",
     "ajv": "~5.2.2",
-    "react-test-renderer": "^15.6.2"
+    "enzyme": "3.3.0",
+    "enzyme-adapter-react-15": "1.0.5",
+    "gulp": "~3.9.1",
+    "identity-obj-proxy": "3.0.0",
+    "jest": "23.1.0",
+    "react-addons-test-utils": "15.6.2",
+    "react-test-renderer": "15.6.2",
+    "ts-jest": "22.4.6"
   }
 }

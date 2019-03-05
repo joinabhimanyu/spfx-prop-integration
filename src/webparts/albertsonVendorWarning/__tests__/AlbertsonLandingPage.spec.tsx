@@ -61,4 +61,12 @@ describe('<AlbertsonLandingPage />', () => {
       expect(component.contains(<AlbertsonContactInfo {...props} />)).to.be.true;
     });
   });
+  it('should have a security group icon', () => {
+    expect(component.contains(<SecurityGroup />)).to.be.true;
+  });
+  it('should have the correct label', () => {
+    const divs = component.find('div');
+    const labelDiv = divs.filter(x => x.text() == 'Proposition 65 Vendor portal');
+    expect(labelDiv.length > 0).to.be.true;
+  });
 });

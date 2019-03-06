@@ -1,7 +1,18 @@
+links 06/03/2019:
+
+https://webdev.dartlang.org/guides/get-started
+
+https://blog.nrwl.io/managing-state-in-angular-applications-22b75ef5625f
+----------------------------------------------------------------------------------
+
+links 05/03/2019:
+
 https://stackoverflow.com/questions/18356502/github-failed-to-connect-to-github-443-windows-failed-to-connect-to-github
 
 https://superuser.com/questions/346372/how-do-i-know-what-proxy-server-im-using
+----------------------------------------------------------------------------------
 
+setting git global proxy:
 
 https://github.com/joinabhimanyu/spfx-prop-integration.git
 
